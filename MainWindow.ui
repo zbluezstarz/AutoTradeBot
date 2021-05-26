@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>599</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,13 +18,46 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
-      <width>241</width>
-      <height>71</height>
+      <y>40</y>
+      <width>261</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="text">
-     <string>시작</string>
+     <string>Start</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="comboBox">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>10</y>
+      <width>181</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>10</y>
+      <width>64</width>
+      <height>15</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Strategy</string>
+    </property>
+   </widget>
+   <widget class="QPlainTextEdit" name="plainTextEdit">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>100</y>
+      <width>781</width>
+      <height>441</height>
+     </rect>
     </property>
    </widget>
   </widget>

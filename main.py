@@ -12,13 +12,26 @@ target_ratio = 0.5
 
 form_class = uic.loadUiType("MainWindow.ui")[0]
 
-def buy_crypto_currency(ticker):
-    krw = bithumb.get_balance() / 5
-    orderbook = pybithumb.get_orderbook(ticker)
-    sell_price = orderbook['asks'][0]['price']
-    unit = krw/float(sell_price)
-    bithumb.buy_market_order(ticker, unit)
+
+def buy_crypto_currency(market, ticker):
+    krw = market.get_balance() / 5
+    orderbook = pyupbit.get_orderbook(ticker)
+    #sell_price = orderbook['asks'][0]['price']
+    #sell_price = orderbook['orderbook_units'][0]['ask_price']
+    #sell_price = orderbook[0]['orderbook_units']['ask_price']
+    #unit = krw / float(sell_price)
+    #market.buy_market_order(ticker, unit)
+    #print("Buy", ticker, krw)
+    bids_asks = orderbook[0]['orderbook_units']
+    print(type(bids_asks))
+    #for bid_ask in bids_asks:
+    #    print(bid_ask)
+    sell_price = bids_asks[0]['ask_price']
+    unit = krw / float(sell_price)
+    #market.buy_market_order(ticker, unit)
+    print(market.buy_market_order(ticker, krw))
     print("Buy", ticker, krw)
+
 
 def get_target_price(ticker):
     df = pyupbit.get_ohlcv(ticker)
@@ -30,16 +43,19 @@ def get_target_price(ticker):
     target = today_open + (yesterday_high - yesterday_low) * target_ratio
     return target
 
-def sell_crypto_currency(ticker):
-    unit = upbit.get_balance(ticker)
+
+def sell_crypto_currency(market, ticker):
+    unit = market.get_balance(ticker)
     if unit > 0.0:
-        upbit.sell_market_order(ticker, unit)
+        market.sell_market_order(ticker, unit)
+
 
 def get_yesterday_ma5(ticker):
     df = pyupbit.get_ohlcv(ticker)
     close = df['close']
     ma = close.rolling(window=5).mean()
     return ma[-2]
+
 
 class MyWindow(QMainWindow, form_class):
     def __init__(self):
@@ -50,6 +66,8 @@ class MyWindow(QMainWindow, form_class):
 
         self.max_num = 20
         self.val_search_day = 3
+        self.now = datetime.datetime.today()
+        self.today_string = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2)
 
 
         with open("../key.txt") as f:
@@ -62,11 +80,23 @@ class MyWindow(QMainWindow, form_class):
 
         self.coin_values = dict()
         self.now = datetime.datetime.today()
-        self.coin_values_filename = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2) + ".txt"
+        self.coin_values_filename = "coin_values_filename.txt"
+        #self.coin_values_filename = self.today_string + ".txt"
+
 
         self.trade_value_top_coin_name = []
 
         if os.path.isfile(self.coin_values_filename) == False:
+            self.update_flag = True
+        else:
+            with open(self.coin_values_filename) as file:
+                line = file.readline().strip()
+                if line != self.today_string:
+                    self.update_flag = True
+                else:
+                    self.update_flag = False
+
+        if self.update_flag == True:
             self.count = 1
             for coin_name in self.coin_names:
                 print(self.count)
@@ -87,12 +117,13 @@ class MyWindow(QMainWindow, form_class):
             # print(trade_value_top)
             print(self.trade_value_top_coin_name)
             file = open(self.coin_values_filename, 'a')
+            file.write(self.today_string + "\n")
             file.write(' '.join(self.trade_value_top_coin_name))
             file.close()
         else:
             with open(self.coin_values_filename) as file:
                 lines = file.readlines()
-                self.trade_value_top_coin_name = lines[0].split(" ")
+                self.trade_value_top_coin_name = lines[1].split(" ")
                 print(self.trade_value_top_coin_name)
 
         self.now = datetime.datetime.now()
@@ -105,11 +136,6 @@ class MyWindow(QMainWindow, form_class):
         self.timer = QTimer(self)
         self.timer.start(10000)
         self.timer.timeout.connect(self.timeout)
-
-
-
-
-
 
     def btn_clicked(self):
         if self.isRunning == True:
@@ -124,7 +150,7 @@ class MyWindow(QMainWindow, form_class):
 
         try:
             if self.isRunning == True:
-                self.file = open("LOG_" + self.coin_values_filename, 'a')
+                self.file = open("LOG_" + self.today_string + ".txt", 'a')
                 for ticker in self.trade_value_top_coin_name:
                     # print(upbit.get_balance(ticker))
                     self.target_price = get_target_price(ticker)
@@ -132,14 +158,14 @@ class MyWindow(QMainWindow, form_class):
                     if self.mid < self.now < self.mid + datetime.timedelta(seconds=60):
                         print("Enter Midnight~~")
                         self.targetPrice = get_target_price(ticker)
-                        self.mid = datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(1)
+                        self.mid = datetime.datetime(self.now.year, self.now.month, self.now.day) + datetime.timedelta(1)
                         self.ma5 = get_yesterday_ma5(ticker)
-                        sell_crypto_currency(ticker)
+                        sell_crypto_currency(self.upbit, ticker)
 
                     self.current_price = pyupbit.get_current_price(ticker)
                     self.ma5 = get_yesterday_ma5(ticker)
                     if (self.current_price > self.target_price) and (self.current_price > self.ma5):
-                        buy_crypto_currency(ticker)
+                        buy_crypto_currency(self.upbit, ticker)
                     self.log = "{0:<12}".format(ticker) + '\t' + "{0:>15}".format(self.target_price) + "{0:>15}".format(
                         self.current_price)
                     self.file.write(self.log + "\n")
@@ -160,23 +186,7 @@ class MyWindow(QMainWindow, form_class):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 app = QApplication(sys.argv)
 window = MyWindow()
 window.show()
 app.exec_()
-
-
-
