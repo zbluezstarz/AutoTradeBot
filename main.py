@@ -3,58 +3,18 @@ import os
 import time
 import pyupbit
 import datetime
+import coin_api
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import *
 
-target_ratio = 0.5
+
 
 form_class = uic.loadUiType("MainWindow.ui")[0]
 
 
-def buy_crypto_currency(market, ticker):
-    krw = market.get_balance() / 5
-    orderbook = pyupbit.get_orderbook(ticker)
-    #sell_price = orderbook['asks'][0]['price']
-    #sell_price = orderbook['orderbook_units'][0]['ask_price']
-    #sell_price = orderbook[0]['orderbook_units']['ask_price']
-    #unit = krw / float(sell_price)
-    #market.buy_market_order(ticker, unit)
-    #print("Buy", ticker, krw)
-    bids_asks = orderbook[0]['orderbook_units']
-    print(type(bids_asks))
-    #for bid_ask in bids_asks:
-    #    print(bid_ask)
-    sell_price = bids_asks[0]['ask_price']
-    unit = krw / float(sell_price)
-    #market.buy_market_order(ticker, unit)
-    print(market.buy_market_order(ticker, krw))
-    print("Buy", ticker, krw)
 
-
-def get_target_price(ticker):
-    df = pyupbit.get_ohlcv(ticker)
-    yesterday = df.iloc[-2]
-
-    today_open = yesterday['close']
-    yesterday_high = yesterday['high']
-    yesterday_low = yesterday['low']
-    target = today_open + (yesterday_high - yesterday_low) * target_ratio
-    return target
-
-
-def sell_crypto_currency(market, ticker):
-    unit = market.get_balance(ticker)
-    if unit > 0.0:
-        market.sell_market_order(ticker, unit)
-
-
-def get_yesterday_ma5(ticker):
-    df = pyupbit.get_ohlcv(ticker)
-    close = df['close']
-    ma = close.rolling(window=5).mean()
-    return ma[-2]
 
 
 class MyWindow(QMainWindow, form_class):
@@ -153,19 +113,19 @@ class MyWindow(QMainWindow, form_class):
                 self.file = open("LOG_" + self.today_string + ".txt", 'a')
                 for ticker in self.trade_value_top_coin_name:
                     # print(upbit.get_balance(ticker))
-                    self.target_price = get_target_price(ticker)
+                    self.target_price = coin_api.get_target_price(ticker)
                     self.now = datetime.datetime.now()
                     if self.mid < self.now < self.mid + datetime.timedelta(seconds=60):
                         print("Enter Midnight~~")
-                        self.targetPrice = get_target_price(ticker)
+                        self.targetPrice = coin_api.get_target_price(ticker)
                         self.mid = datetime.datetime(self.now.year, self.now.month, self.now.day) + datetime.timedelta(1)
-                        self.ma5 = get_yesterday_ma5(ticker)
-                        sell_crypto_currency(self.upbit, ticker)
+                        self.ma5 = coin_api.get_yesterday_ma5(ticker)
+                        coin_api.sell_crypto_currency(self.upbit, ticker)
 
                     self.current_price = pyupbit.get_current_price(ticker)
-                    self.ma5 = get_yesterday_ma5(ticker)
+                    self.ma5 = coin_api.get_yesterday_ma5(ticker)
                     if (self.current_price > self.target_price) and (self.current_price > self.ma5):
-                        buy_crypto_currency(self.upbit, ticker)
+                        coin_api.buy_crypto_currency(self.upbit, ticker)
                     self.log = "{0:<12}".format(ticker) + '\t' + "{0:>15}".format(self.target_price) + "{0:>15}".format(
                         self.current_price)
                     self.file.write(self.log + "\n")
