@@ -124,10 +124,12 @@ class MyWindow(QMainWindow, form_class):
 
                     self.current_price = pyupbit.get_current_price(ticker)
                     self.ma5 = coin_api.get_yesterday_ma5(ticker)
-                    if (self.current_price > self.target_price) and (self.current_price > self.ma5):
-                        coin_api.buy_crypto_currency(self.upbit, ticker)
                     self.log = "{0:<12}".format(ticker) + '\t' + "{0:>15}".format(self.target_price) + "{0:>15}".format(
                         self.current_price)
+                    if (self.current_price > self.target_price) and (self.current_price > self.ma5):
+                        coin_api.buy_crypto_currency(self.upbit, ticker)
+                        self.log += ("Buy" + ticker)
+
                     self.file.write(self.log + "\n")
                     # print(log)
                     time.sleep(0.2)
