@@ -4,8 +4,8 @@ import time
 import pyupbit
 import datetime
 from library import coin_api
-from config import config
-from db import db
+#from config import config
+#from db import db
 from log import logging_api
 
 
@@ -28,9 +28,15 @@ class MyApp():
             file_name=today_string
         )
 
-        logger.debug("test")
-        logger.info("test")
-        logger.warning("test")
+        logger.info("거래 정보 읽어오기")
+
+        logger.info("전략 선택하기")
+
+        logger.info("파라미터 읽어오기")
+
+        logger.info("실전매매 또는 백테스트 시작")
+
+
 
 
 class MyWindow(QMainWindow, form_class):
