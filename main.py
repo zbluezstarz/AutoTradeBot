@@ -22,18 +22,20 @@ form_class = uic.loadUiType("MainWindow.ui")[0]
 class MyApp():
     def __init__(self):
         self.now = datetime.datetime.today()
-        today_string = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2) + ".log"
+        log_file_name = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2) + ".txt"
         logger = logging_api.create_logger(
             logger_name="auto_bot_logger",
-            file_name=today_string
+            file_name=log_file_name
         )
+        logger.info("거래소 접속")
+        self.exchange = coin_api.connect_exchange("../key.txt")
+        self.coin_names = coin_api.get_exchange_api().fetch_market()
+        print(self.coin_names)
 
         logger.info("거래 정보 읽어오기")
-
+        logger.info("거래 정보 읽어오기")
         logger.info("전략 선택하기")
-
         logger.info("파라미터 읽어오기")
-
         logger.info("실전매매 또는 백테스트 시작")
 
 

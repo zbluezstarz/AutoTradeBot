@@ -1,6 +1,20 @@
 import pyupbit
 
 target_ratio = 0.5
+def get_exchange_api():
+    return pyupbit
+
+def create_exchange_instance(acc_key, sec_key):
+    return get_exchange_api().Upbit(acc_key, sec_key)
+
+def connect_exchange(key_name):
+    with open(key_name) as f:
+        lines = f.readlines()
+        acc_key = lines[0].strip()
+        sec_key = lines[1].strip()
+        exchange = create_exchange_instance(acc_key, sec_key)
+        return exchange
+
 def buy_crypto_currency(market, ticker):
     krw = market.get_balance() / 5
     orderbook = pyupbit.get_orderbook(ticker)
