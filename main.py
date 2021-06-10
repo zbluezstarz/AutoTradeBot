@@ -3,7 +3,11 @@ import os
 import time
 import pyupbit
 import datetime
-import coin_api
+from library import coin_api
+from config import config
+from db import db
+from log import logging_api
+
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -15,6 +19,18 @@ form_class = uic.loadUiType("MainWindow.ui")[0]
 
 
 
+class MyApp():
+    def __init__(self):
+        self.now = datetime.datetime.today()
+        today_string = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2) + ".log"
+        logger = logging_api.create_logger(
+            logger_name="auto_bot_logger",
+            file_name=today_string
+        )
+
+        logger.debug("test")
+        logger.info("test")
+        logger.warning("test")
 
 
 class MyWindow(QMainWindow, form_class):
@@ -149,6 +165,7 @@ class MyWindow(QMainWindow, form_class):
 
 
 app = QApplication(sys.argv)
-window = MyWindow()
-window.show()
+#window = MyWindow()
+#window.show()
+my_app = MyApp()
 app.exec_()
