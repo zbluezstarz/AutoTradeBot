@@ -1,4 +1,5 @@
 import sys
+import datetime
 import logging.handlers
 
 
@@ -10,7 +11,7 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
     logger.setLevel(logging.DEBUG)
 
     # formatter instance 생성
-    log_format = "[%(levelname)+8s|%(filename)+15s:%(lineno)+4s] %(asctime)s > %(message)s"
+    log_format = "[%(levelname)+8s|%(filename)+20s:%(lineno)+4s] %(asctime)s > %(message)s"
     formatter = logging.Formatter(log_format)
 
     # handler instance 생성
@@ -30,6 +31,14 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
     logger.addHandler(file_handler)
 
     return logger
+
+
+now = datetime.datetime.today()
+log_file_name = str(now.year) + (str(now.month)).zfill(2) + (str(now.day)).zfill(2) + ".txt"
+logger = create_logger(
+    logger_name="auto_bot_logger",
+    file_name=log_file_name
+)
 
 if __name__ == "__main__":
     pass
