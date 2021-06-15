@@ -8,16 +8,11 @@ from library import coin_api
 #from db import db
 from log import logging_api
 
+#from PyQt5.QtWidgets import *
+#from PyQt5 import uic
+#from PyQt5.QtCore import *
 
-from PyQt5.QtWidgets import *
-from PyQt5 import uic
-from PyQt5.QtCore import *
-
-
-
-form_class = uic.loadUiType("MainWindow.ui")[0]
-
-
+#form_class = uic.loadUiType("MainWindow.ui")[0]
 
 class MyApp():
     def __init__(self):
@@ -30,7 +25,7 @@ class MyApp():
         logger.info("거래소 접속")
         self.exchange = coin_api.connect_exchange("../key.txt")
         self.coin_names = coin_api.get_exchange_api().fetch_market()
-        print(self.coin_names)
+        #print(self.coin_names)
 
         logger.info("거래 정보 읽어오기")
         logger.info("거래 정보 읽어오기")
@@ -39,7 +34,7 @@ class MyApp():
         logger.info("실전매매 또는 백테스트 시작")
 
 
-
+'''
 
 class MyWindow(QMainWindow, form_class):
     def __init__(self):
@@ -66,8 +61,6 @@ class MyWindow(QMainWindow, form_class):
         self.now = datetime.datetime.today()
         self.coin_values_filename = "coin_values_filename.txt"
         #self.coin_values_filename = self.today_string + ".txt"
-
-
         self.trade_value_top_coin_name = []
 
         if os.path.isfile(self.coin_values_filename) == False:
@@ -169,11 +162,10 @@ class MyWindow(QMainWindow, form_class):
         #time.sleep(10)
         # count += 1
         # print(count)
+'''
 
-
-
-app = QApplication(sys.argv)
+#app = QApplication(sys.argv)
 #window = MyWindow()
 #window.show()
 my_app = MyApp()
-app.exec_()
+#app.exec_()
