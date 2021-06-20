@@ -4,7 +4,7 @@ import time
 import pyupbit
 
 from library import coin_api
-from library.crypto_cuccency import *
+from library.crypto_currency import *
 #from config import config
 #from db import db
 from log import logging_api
@@ -28,19 +28,11 @@ class MyWindow(QMainWindow, form_class):
         self.pushButton.clicked.connect(self.btn_clicked)
         self.isRunning = False
 
-        self.max_num = 20
+        
         self.val_search_day = 3
         self.now = datetime.datetime.today()
         self.today_string = str(self.now.year) + (str(self.now.month)).zfill(2) + (str(self.now.day)).zfill(2)
 
-
-        with open("../key.txt") as f:
-            lines = f.readlines()
-            acc_key = lines[0].strip()
-            sec_key = lines[1].strip()
-
-        self.upbit = pyupbit.Upbit(acc_key, sec_key)
-        self.coin_names = pyupbit.fetch_market()
 
         self.coin_values = dict()
         self.now = datetime.datetime.today()

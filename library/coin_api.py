@@ -15,6 +15,11 @@ def connect_exchange(key_name):
         exchange = create_exchange_instance(acc_key, sec_key)
         return exchange
 
+def get_exchane_price_update_time(exchange_api):
+    df = exchange_api.get_ohlcv("KRW-BTC", interval="day", count=1)
+    start_time = df.index[0]
+    return start_time
+
 def buy_crypto_currency(market, ticker):
     krw = market.get_balance() / 5
     orderbook = pyupbit.get_orderbook(ticker)
@@ -43,11 +48,23 @@ def sell_crypto_currency(market, ticker):
     if unit > 0.0:
         market.sell_market_order(ticker, unit)
 
-def get_yesterday_ma5(ticker):
-    df = pyupbit.get_ohlcv(ticker)
-    close = df['close']
-    ma = close.rolling(window=5).mean()
-    return ma[-2]
+def get_moving_average(exchange_api, ticker, day_num):
+    df = exchange_api.get_ohlcv(ticker, interval="day", count=day_num)
+    ma = df['close'].rolling(day_num).mean().iloc[-1]
+    return ma
+
+def get_current_price(exchange_api, ticker):
+    return exchange_api.get_orderbook(tickers=ticker)[0]["orderbook_units"][0]["ask_price"]
+
+def get_balance(exchange, currency):
+    balances = exchange.get_balances()
+    for b in balances:
+        if b['currency'] == currency:
+            if b['balance'] is not None:
+                return float(b['balance'])
+            else:
+                return 0
+    return 0
 
 if __name__ == "__main__":
     pass

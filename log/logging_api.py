@@ -11,7 +11,7 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
     logger.setLevel(logging.DEBUG)
 
     # formatter instance 생성
-    log_format = "[%(levelname)+8s|%(filename)+20s:%(lineno)+4s] %(asctime)s > %(message)s"
+    log_format = "[%(levelname)+8s|%(filename)+25s:%(lineno)+4s] %(asctime)s > %(message)s"
     formatter = logging.Formatter(log_format)
 
     # handler instance 생성
