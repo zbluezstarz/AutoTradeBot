@@ -4,7 +4,8 @@ import datetime
 import time
 import os
 
-class VolatilityBreakout() :
+
+class VolatilityBreakout():
     def __init__(self, exchange, api):
         self.name = "VolatilityBreakout"
         self.is_running = False
@@ -18,6 +19,7 @@ class VolatilityBreakout() :
         self.target_tickers_file = "target_tickers.txt"
 
         logger.info("Create VolatilityBreakout Strategy Object")
+
     def set_parameters(self):
         logger.debug("Get " + self.name + " Parameters from file")
         self.k = 0.5
@@ -59,7 +61,7 @@ class VolatilityBreakout() :
         file.write(' '.join(self.target_tickers))
         file.close()
 
-    def update_target_tickers(self):
+    def update_target_tickers(self, start_time, end_time):
         if os.path.isfile(self.target_tickers_file) is False:
             self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
             self.update_target_tickers_file(self.target_tickers_file)
@@ -74,7 +76,7 @@ class VolatilityBreakout() :
                     with open(self.target_tickers_file) as target_ticker_file:
                         lines = target_ticker_file.readlines()
                         self.target_tickers = lines[1].split(" ")
-                        #print(self.target_tickers)
+                        # print(self.target_tickers)
                 else:
                     self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
                     self.update_target_tickers_file(self.target_tickers_file)
@@ -88,27 +90,27 @@ class VolatilityBreakout() :
         logger.info("Start " + self.name + " Trading")
         logger.info(str(start_time) + " ~ " + str(end_time))
 
-        self.update_target_tickers()
+        self.update_target_tickers(start_time, end_time)
 
         remain_buy_list = self.target_tickers
         while self.is_running:
             try:
                 for target_ticker in self.target_tickers:
-                    if target_ticker not in remain_buy_list :
+                    if target_ticker not in remain_buy_list:
                         logger.debug(target_ticker + " already buy")
                         continue
                     running_now = datetime.datetime.now()
                     if start_time < running_now < end_time - datetime.timedelta(seconds=60):
                         target_price = self.get_target_price(target_ticker, self.k)
                         ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
-                        #logger.debug("MA: " + str(ma))
+                        # logger.debug("MA: " + str(ma))
                         current_price = get_current_price(self.exchange_api, target_ticker)
                         krw = get_balance(self.exchange, "KRW")
                         logger.debug("{0:<9}".format(target_ticker) + " | " +
                                      "{0:<9}".format(str(int(target_price))) + ":" +
                                      "{0:<9}".format(str(int(current_price))) + ", " +
                                      "{0:<9}".format(str(int(krw)))
-                                    )
+                                     )
 
                         if target_price < current_price and ma < current_price:
                             if krw > 5000:
@@ -121,7 +123,7 @@ class VolatilityBreakout() :
                         start_time = get_exchane_price_update_time(self.exchange_api)
                         end_time = start_time + datetime.timedelta(days=1)
                         logger.info(str(start_time) + " ~ " + str(end_time))
-                        self.update_target_tickers()
+                        self.update_target_tickers(start_time, end_time)
 
             except Exception as e:
                 logger.critical(e)
