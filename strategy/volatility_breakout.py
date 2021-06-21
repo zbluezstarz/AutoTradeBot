@@ -5,7 +5,7 @@ import time
 import os
 
 
-class VolatilityBreakout():
+class VolatilityBreakout:
     def __init__(self, exchange, api):
         self.name = "VolatilityBreakout"
         self.is_running = False
@@ -15,6 +15,8 @@ class VolatilityBreakout():
         self.moving_average_day = 5
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
+        self.loss_cut = -70.0
+        self.profit_cut = 50.0
         self.target_tickers = []
         self.target_tickers_file = "target_tickers.txt"
 
@@ -26,6 +28,8 @@ class VolatilityBreakout():
         self.moving_average_day = 5
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
+        self.loss_cut = -70.0
+        self.profit_cut = 50.0
         logger.info("Set " + self.name + " Parameters")
 
     def get_target_price(self, ticker, k):
@@ -95,12 +99,28 @@ class VolatilityBreakout():
         remain_buy_list = self.target_tickers
         while self.is_running:
             try:
+                '''
+                balances = self.exchange.get_balances()
+                # print(balances)
+                for balance in balances:
+                    logger.debug(balance)
+                    currency = balance['currency']
+                    if currency == 'KRW':
+                        continue
+                    else:
+                        ticker = balance['unit_currency'] + '-' + currency
+                        current_price = float(self.exchange_api.get_current_price(ticker))
+                        logger.debug(currency + " = " + str(current_price))
+                        avg_buy_price = float(balance['avg_buy_price'])
+                        logger.debug(((current_price - avg_buy_price) / avg_buy_price) * 100.0)
+                '''
+
                 for target_ticker in self.target_tickers:
                     if target_ticker not in remain_buy_list:
                         logger.debug(target_ticker + " already buy")
                         continue
                     running_now = datetime.datetime.now()
-                    if start_time < running_now < end_time - datetime.timedelta(seconds=60):
+                    if start_time < running_now < end_time - datetime.timedelta(seconds=10):
                         target_price = self.get_target_price(target_ticker, self.k)
                         ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
                         # logger.debug("MA: " + str(ma))
@@ -117,13 +137,50 @@ class VolatilityBreakout():
                                 self.exchange.buy_market_order(target_price, self.each_ticker_value * 0.9995)
                                 remain_buy_list.remove(target_ticker)
                                 logger.debug(target_ticker + "," + target_price + ", Buy")
-                        time.sleep(1)
 
-                    elif running_now > (end_time + datetime.timedelta(seconds=60)):
+                    elif running_now > (end_time + datetime.timedelta(seconds=10)):
                         start_time = get_exchane_price_update_time(self.exchange_api)
                         end_time = start_time + datetime.timedelta(days=1)
                         logger.info(str(start_time) + " ~ " + str(end_time))
                         self.update_target_tickers(start_time, end_time)
+                        remain_buy_list = self.target_tickers
+
+                        logger.debug("Sell All Tickers")
+                        balances = self.exchange.get_balances()
+                        # print(balances)
+                        for balance in balances:
+                            logger.debug(balance)
+                            currency = balance['currency']
+                            # print(currency)
+                            if currency == 'KRW':
+                                continue
+                            else:
+                                ticker = balance['unit_currency'] + '-' + currency
+                                #print(currency + " = " + str(self.exchange_api.get_current_price(ticker)))
+                                result = self.exchange.sell_market_order(ticker, balance['balance'])
+                                logger.debug("Sell " + ticker + ", " + balance['balance'] + " " + str(result))
+
+                    else:
+                        logger.debug("Wait~")
+
+                    time.sleep(1)
+
+                balances = self.exchange.get_balances()
+                for balance in balances:
+                    logger.debug(balance)
+                    currency = balance['currency']
+                    if currency == 'KRW':
+                        continue
+                    else:
+                        ticker = balance['unit_currency'] + '-' + currency
+                        current_price = float(self.exchange_api.get_current_price(ticker))
+                        logger.debug(currency + " = " + str(current_price))
+                        avg_buy_price = float(balance['avg_buy_price'])
+                        profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
+                        logger.debug(ticker + " >>> " + str(profit_rate))
+                        if(profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
+                            result = self.exchange.sell_market_order(ticker, balance['balance'])
+                            logger.debug("Sell " + ticker + ", " + balance['balance'] + " " + str(result))
 
             except Exception as e:
                 logger.critical(e)
