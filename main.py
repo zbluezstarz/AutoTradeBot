@@ -145,4 +145,5 @@ class MyWindow(QMainWindow, form_class):
 #window = MyWindow()
 #window.show()
 crypto = CryptoCurrency()
+crypto.start_trade()
 #app.exec_()

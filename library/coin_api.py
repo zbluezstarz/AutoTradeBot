@@ -1,6 +1,6 @@
 import pyupbit
+import datetime
 
-target_ratio = 0.5
 def get_exchange_api():
     return pyupbit
 
@@ -20,34 +20,6 @@ def get_exchane_price_update_time(exchange_api):
     start_time = df.index[0]
     return start_time
 
-def buy_crypto_currency(market, ticker):
-    krw = market.get_balance() / 5
-    orderbook = pyupbit.get_orderbook(ticker)
-
-    bids_asks = orderbook[0]['orderbook_units']
-    print(type(bids_asks))
-
-    sell_price = bids_asks[0]['ask_price']
-    unit = krw / float(sell_price)
-    #market.buy_market_order(ticker, unit)
-    print(market.buy_market_order(ticker, krw))
-    print("Buy", ticker, krw)
-
-def get_target_price(ticker):
-    df = pyupbit.get_ohlcv(ticker)
-    yesterday = df.iloc[-2]
-
-    today_open = yesterday['close']
-    yesterday_high = yesterday['high']
-    yesterday_low = yesterday['low']
-    target = today_open + (yesterday_high - yesterday_low) * target_ratio
-    return target
-
-def sell_crypto_currency(market, ticker):
-    unit = market.get_balance(ticker)
-    if unit > 0.0:
-        market.sell_market_order(ticker, unit)
-
 def get_moving_average(exchange_api, ticker, day_num):
     df = exchange_api.get_ohlcv(ticker, interval="day", count=day_num)
     ma = df['close'].rolling(day_num).mean().iloc[-1]
@@ -65,6 +37,13 @@ def get_balance(exchange, currency):
             else:
                 return 0
     return 0
+
+def write_target_tickers_in_file(file_name, target_tickers):
+    file_now = datetime.datetime.now()
+    file = open(file_name, 'w')
+    file.write(str(file_now) + "\n")
+    file.write(' '.join(target_tickers))
+    file.close()
 
 if __name__ == "__main__":
     pass
