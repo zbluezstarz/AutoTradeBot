@@ -54,10 +54,10 @@ class VolatilityBreakout:
                      )
         if target_price < current_price and ma < current_price:
             if krw > 5000:
-                result = self.exchange.buy_market_order(target_price, self.each_ticker_value * 0.9995)
+                result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
                 if 'error' not in result.keys():
                     remain_buy_list.remove(target_ticker)
-                logger.debug(target_ticker + "," + target_price + ", Buy " + str(result))
+                logger.debug(target_ticker + "," + str(target_price) + ", Buy " + str(result))
 
 
 
