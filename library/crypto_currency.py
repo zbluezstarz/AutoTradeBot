@@ -9,6 +9,7 @@ class CryptoCurrency():
         self.is_running = False
         self.target_tickers = []
         self.remain_buy_list = []
+        self.is_no_action_time = False
 
         logger.info("Get Crypto Class Parameter")
         crypto_param.get_crypto_parameter()
@@ -27,6 +28,7 @@ class CryptoCurrency():
     def init_trade(self):
         start_time, end_time = self.current_strategy.get_start_end_time()
         logger.info("Init Target Tickers")
+        str(start_time) + " ~ " + str(end_time)
         self.target_tickers = self.current_strategy.update_target_tickers(start_time, end_time)
         self.remain_buy_list = self.target_tickers
 
@@ -37,6 +39,8 @@ class CryptoCurrency():
         logger.info("Start Trading")
         self.is_running = True
 
+        self.is_no_action_time = False
+
         while self.is_running:
             try:
                 for target_ticker in self.target_tickers:
@@ -46,20 +50,23 @@ class CryptoCurrency():
 
                     running_now = datetime.datetime.now()
 
-                    if start_time < running_now < end_time - datetime.timedelta(seconds=10):
+                    if start_time < running_now < end_time - datetime.timedelta(seconds=30):
                         self.current_strategy.execute_buy_strategy(target_ticker, self.remain_buy_list)
 
-                    elif running_now > (end_time + datetime.timedelta(seconds=10)):
+                    elif running_now > (end_time + datetime.timedelta(seconds=30)):
                         self.current_strategy.execute_turn_end_process()
 
                         start_time, end_time = self.init_trade()
+                        self.is_no_action_time = False
 
                     else:
-                        logger.debug("Wait~")
+                        self.is_no_action_time = True
+                        logger.debug("No Action Time~")
+                        time.sleep(10)
 
                     time.sleep(1)
-
-                self.current_strategy.execute_sell_strategy(self.remain_buy_list)
+                if not self.is_no_action_time:
+                    self.current_strategy.execute_sell_strategy(self.remain_buy_list)
 
             except Exception as e:
                 logger.critical(e)

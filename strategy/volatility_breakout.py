@@ -105,16 +105,19 @@ class VolatilityBreakout:
             logger.info(self.target_tickers_file + " is already Exist")
             with open(self.target_tickers_file) as file:
                 line = file.readline().strip()
+                logger.debug(line)
                 file_time = datetime.datetime.strptime(line, '%Y-%m-%d %H:%M:%S.%f')
+                logger.debug(file_time)
 
                 if start_time < file_time < end_time:
                     with open(self.target_tickers_file) as target_ticker_file:
                         lines = target_ticker_file.readlines()
                         self.target_tickers = lines[1].split(" ")
-                        # print(self.target_tickers)
+                        logger.debug(self.target_tickers)
                 else:
                     self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
                     write_target_tickers_in_file(self.target_tickers_file, self.target_tickers)
+                    logger.debug(self.target_tickers)
 
         return self.target_tickers
 
