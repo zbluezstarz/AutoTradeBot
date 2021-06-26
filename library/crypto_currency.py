@@ -53,7 +53,7 @@ class CryptoCurrency():
                     if start_time < running_now < end_time - datetime.timedelta(seconds=30):
                         self.current_strategy.execute_buy_strategy(target_ticker, self.remain_buy_list)
 
-                    elif running_now > (end_time + datetime.timedelta(seconds=30)):
+                    elif running_now > (end_time + datetime.timedelta(seconds=60)):
                         self.current_strategy.execute_turn_end_process()
 
                         start_time, end_time = self.init_trade()

@@ -12,24 +12,25 @@ class VolatilityBreakout:
         self.exchange_api = api
         self.exchange = exchange
         self.k = 0.5
-        self.moving_average_day = 5
+        self.moving_average_day = 3
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
-        self.loss_cut = -60.0
-        self.profit_cut = 50.0
+        self.loss_cut = -5.0
+        self.profit_cut = 10.0
         self.target_tickers = []
         self.target_tickers_file = "target_tickers.txt"
+        self.count = 0
 
         logger.info("Create VolatilityBreakout Strategy Object")
 
     def set_parameters(self):
         logger.debug("Get " + self.name + " Parameters from file")
         self.k = 0.5
-        self.moving_average_day = 5
+        self.moving_average_day = 3
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
-        self.loss_cut = -70.0
-        self.profit_cut = 50.0
+        self.loss_cut = -5.0
+        self.profit_cut = 10.0
         logger.info("Set " + self.name + " Parameters")
 
     def get_start_end_time(self):
@@ -59,16 +60,14 @@ class VolatilityBreakout:
                     remain_buy_list.remove(target_ticker)
                 logger.debug(target_ticker + "," + str(target_price) + ", Buy " + str(result))
 
-
-
     def execute_sell_strategy(self, remain_buy_list):
         balances = self.exchange.get_balances()
         for balance in balances:
-            logger.debug(balance)
             currency = balance['currency']
             if currency == 'KRW':
                 continue
             else:
+                logger.debug(balance)
                 ticker = balance['unit_currency'] + '-' + currency
                 current_price = float(self.exchange_api.get_current_price(ticker))
                 logger.debug(currency + " = " + str(current_price))
@@ -86,12 +85,12 @@ class VolatilityBreakout:
         balances = self.exchange.get_balances()
         # print(balances)
         for balance in balances:
-            logger.debug(balance)
             currency = balance['currency']
             # print(currency)
             if currency == 'KRW':
                 continue
             else:
+                logger.debug(balance)
                 ticker = balance['unit_currency'] + '-' + currency
                 # print(currency + " = " + str(self.exchange_api.get_current_price(ticker)))
                 result = self.exchange.sell_market_order(ticker, balance['balance'])
@@ -105,9 +104,9 @@ class VolatilityBreakout:
             logger.info(self.target_tickers_file + " is already Exist")
             with open(self.target_tickers_file) as file:
                 line = file.readline().strip()
-                logger.debug(line)
+                # logger.debug(line)
                 file_time = datetime.datetime.strptime(line, '%Y-%m-%d %H:%M:%S.%f')
-                logger.debug(file_time)
+                # logger.debug(file_time)
 
                 if start_time < file_time < end_time:
                     with open(self.target_tickers_file) as target_ticker_file:
@@ -127,22 +126,25 @@ class VolatilityBreakout:
         return target_price
 
     def get_target_ticker(self, exchange_api, max_ticker_num):
+        self.count = 1
         coin_values = dict()
         trade_value_top_coin_name = []
         coin_names = exchange_api.fetch_market()
-        count = 1
+        logger.debug("Get Ticker Values Start!")
         for coin_name in coin_names:
-            print(count)
-            count += 1
+            logger.debug(self.count)
+            self.count += 1
             df = exchange_api.get_ohlcv(ticker=coin_name['market'])  # count=val_search_day)
             coin_values[coin_name['market']] = df.iloc[-2]['value']
-        # print(coin_values)
+            time.sleep(0.1)
+        logger.debug("Get Ticker Values End!")
+        # logger.debug(coin_values)
         coin_values_reverse = sorted(coin_values.items(), reverse=True, key=lambda item: item[1])
-        # print(coin_values_reverse)
+        # logger.debug(coin_values_reverse)
         trade_value_top = coin_values_reverse[:max_ticker_num]
-        # print(len(trade_value_top), trade_value_top)
+        # logger.debug(len(trade_value_top), trade_value_top)
         for i in range(max_ticker_num):
             trade_value_top_coin_name.append(trade_value_top[i][0])
-        # print(trade_value_top)
-        # print(trade_value_top_coin_name)
+        # logger.debug(trade_value_top)
+        # logger.debug(trade_value_top_coin_name)
         return trade_value_top_coin_name
