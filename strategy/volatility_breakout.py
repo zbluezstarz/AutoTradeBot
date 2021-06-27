@@ -55,7 +55,10 @@ class VolatilityBreakout:
                      )
         if target_price < current_price and ma < current_price:
             if krw > 5000:
-                result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
+                if krw < self.each_ticker_value:
+                    result = self.exchange.buy_market_order(target_ticker, krw*0.9995)
+                else:
+                    result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value*0.9995)
                 if 'error' not in result.keys():
                     remain_buy_list.remove(target_ticker)
                 logger.debug(target_ticker + "," + str(target_price) + ", Buy " + str(result))
@@ -132,7 +135,7 @@ class VolatilityBreakout:
         coin_names = exchange_api.fetch_market()
         logger.debug("Get Ticker Values Start!")
         for coin_name in coin_names:
-            logger.debug(self.count)
+            logger.debug(str(self.count))
             self.count += 1
             df = exchange_api.get_ohlcv(ticker=coin_name['market'])  # count=val_search_day)
             coin_values[coin_name['market']] = df.iloc[-2]['value']

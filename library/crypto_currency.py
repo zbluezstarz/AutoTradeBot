@@ -73,6 +73,7 @@ class CryptoCurrency():
 
             except Exception as e:
                 logger.critical(e)
+                sendMessageToChat(e)
 
             time.sleep(1)
 

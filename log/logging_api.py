@@ -1,5 +1,6 @@
 import sys
 import datetime
+import time
 import logging.handlers
 import telegram
 
@@ -48,6 +49,7 @@ chat_bot = telegram.Bot(token=token)
 
 def sendMessageToChat(msg):
     chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
+    time.sleep(3) # 3sec sleep to prevent block
 
 if __name__ == "__main__":
     pass
