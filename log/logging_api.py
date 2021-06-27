@@ -1,7 +1,7 @@
 import sys
 import datetime
 import logging.handlers
-
+import telegram
 
 def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=logging.DEBUG, file_name="debug.log"):
     # logger instance 생성
@@ -32,13 +32,22 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
 
     return logger
 
-
 now = datetime.datetime.today()
 log_file_name = str(now.year) + (str(now.month)).zfill(2) + (str(now.day)).zfill(2) + ".txt"
 logger = create_logger(
     logger_name="auto_bot_logger",
     file_name=log_file_name
 )
+
+with open("../chat_bot.txt") as f:
+    lines = f.readlines()
+    token = lines[0].split("=")[1].strip()
+    chat_id = int(lines[1].split("=")[1].strip())
+
+chat_bot = telegram.Bot(token=token)
+
+def sendMessageToChat(msg):
+    chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
 
 if __name__ == "__main__":
     pass

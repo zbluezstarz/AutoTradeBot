@@ -27,10 +27,12 @@ class CryptoCurrency():
 
     def init_trade(self):
         start_time, end_time = self.current_strategy.get_start_end_time()
+        sendMessageToChat("Init Target Tickers")
         logger.info("Init Target Tickers")
         str(start_time) + " ~ " + str(end_time)
         self.target_tickers = self.current_strategy.update_target_tickers(start_time, end_time)
         self.remain_buy_list = self.target_tickers
+        sendMessageToChat("Init Trade")
 
         return start_time, end_time
 
