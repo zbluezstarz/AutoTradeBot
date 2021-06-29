@@ -29,8 +29,8 @@ class VolatilityBreakout:
         self.moving_average_day = 3
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
-        self.loss_cut = -5.0
-        self.profit_cut = 10.0
+        self.loss_cut = -10.0
+        self.profit_cut = 500.0
         logger.info("Set " + self.name + " Parameters")
 
     def get_start_end_time(self):
@@ -43,25 +43,33 @@ class VolatilityBreakout:
         pass
 
     def execute_buy_strategy(self, target_ticker, remain_buy_list):
-        target_price = self.get_target_price(target_ticker, self.k)
-        ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
-        # logger.debug("MA: " + str(ma))
-        current_price = get_current_price(self.exchange_api, target_ticker)
-        krw = get_balance(self.exchange, "KRW")
-        logger.debug("{0:<9}".format(target_ticker) + " | " +
-                     "{0:<9}".format(str(int(target_price))) + ":" +
-                     "{0:<9}".format(str(int(current_price))) + ", " +
-                     "{0:<9}".format(str(int(krw)))
-                     )
-        if target_price < current_price and ma < current_price:
-            if krw > 5000:
-                if krw < self.each_ticker_value:
-                    result = self.exchange.buy_market_order(target_ticker, krw*0.9995)
-                else:
-                    result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value*0.9995)
-                if 'error' not in result.keys():
-                    remain_buy_list.remove(target_ticker)
-                logger.debug(target_ticker + "," + str(target_price) + ", Buy " + str(result))
+        balance = get_balance(self.exchange, target_ticker)
+        if float(balance['balance']) > 0.000000:
+            ret_msg = target_ticker + 'already has (' + balance['balance'] + ')'
+            logger.debug(ret_msg)
+            sendMessageToChat(ret_msg)
+        else:
+            target_price = self.get_target_price(target_ticker, self.k)
+            ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
+            # logger.debug("MA: " + str(ma))
+            current_price = get_current_price(self.exchange_api, target_ticker)
+            krw = get_balance(self.exchange, "KRW")
+            logger.debug("{0:<9}".format(target_ticker) + " | " +
+                         "{0:<9}".format(str(int(target_price))) + ":" +
+                         "{0:<9}".format(str(int(current_price))) + ", " +
+                         "{0:<9}".format(str(int(krw)))
+                         )
+            if target_price < current_price and ma < current_price:
+                if krw > 5000:
+                    if krw < self.each_ticker_value:
+                        result = self.exchange.buy_market_order(target_ticker, krw * 0.9995)
+                    else:
+                        result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
+                    if 'error' not in result.keys():
+                        remain_buy_list.remove(target_ticker)
+                    buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
+                    logger.debug(buy_msg)
+                    sendMessageToChat(buy_msg)
 
     def execute_sell_strategy(self, remain_buy_list):
         balances = self.exchange.get_balances()
@@ -71,17 +79,24 @@ class VolatilityBreakout:
                 continue
             else:
                 logger.debug(balance)
-                ticker = balance['unit_currency'] + '-' + currency
-                current_price = float(self.exchange_api.get_current_price(ticker))
-                logger.debug(currency + " = " + str(current_price))
-                avg_buy_price = float(balance['avg_buy_price'])
-                profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
-                logger.debug(ticker + " >>> " + str(profit_rate))
-                if (profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
-                    result = self.exchange.sell_market_order(ticker, balance['balance'])
-                    if 'error' not in result.keys():
-                        remain_buy_list.append(ticker)
-                    logger.debug("Sell " + ticker + ", " + balance['balance'] + " " + str(result))
+                target_ticker = balance['unit_currency'] + '-' + currency
+                current_price = float(self.exchange_api.get_current_price(target_ticker))
+                balance_ticker_price = float(balance['balance']) * current_price
+                if balance_ticker_price >= 5000.0:
+                    logger.debug(currency + " = " + str(current_price))
+                    avg_buy_price = float(balance['avg_buy_price'])
+                    profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
+                    logger.debug(target_ticker + " >>> " + str(profit_rate))
+                    if (profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
+                        result = self.exchange.sell_market_order(target_ticker, balance['balance'])
+                        if 'error' not in result.keys():
+                            remain_buy_list.append(target_ticker)
+                        logger.debug("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
+                        sendMessageToChat("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
+                else:
+                    err_msg = target_ticker + "balance_ticker price under 5000 " + str(balance_ticker_price)
+                    logger.debug(err_msg)
+                    sendMessageToChat(err_msg)
 
     def execute_turn_end_process(self):
         logger.debug("Sell All Tickers")
