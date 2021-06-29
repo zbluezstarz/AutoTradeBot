@@ -44,8 +44,8 @@ class VolatilityBreakout:
 
     def execute_buy_strategy(self, target_ticker, remain_buy_list):
         balance = get_balance(self.exchange, target_ticker)
-        if float(balance['balance']) > 0.000000:
-            ret_msg = target_ticker + 'already has (' + balance['balance'] + ')'
+        if float(balance) > 0.000000:
+            ret_msg = target_ticker + 'already has (' + balance + ')'
             logger.debug(ret_msg)
             sendMessageToChat(ret_msg)
         else:
@@ -60,7 +60,7 @@ class VolatilityBreakout:
                          "{0:<9}".format(str(int(krw)))
                          )
             if target_price < current_price and ma < current_price:
-                if krw > 5000:
+                if krw > 5000.0:
                     if krw < self.each_ticker_value:
                         result = self.exchange.buy_market_order(target_ticker, krw * 0.9995)
                     else:

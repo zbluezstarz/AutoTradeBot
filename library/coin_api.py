@@ -35,8 +35,8 @@ def get_balance(exchange, currency):
             if b['balance'] is not None:
                 return float(b['balance'])
             else:
-                return 0
-    return 0
+                return 0.0
+    return 0.0
 
 def write_target_tickers_in_file(file_name, target_tickers):
     file_now = datetime.datetime.now()
