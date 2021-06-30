@@ -49,6 +49,8 @@ class VolatilityBreakout:
             logger.debug(ret_msg)
             sendMessageToChat(ret_msg)
         else:
+            logger.debug(str(balance))
+            sendMessageToChat(str(balance))
             target_price = self.get_target_price(target_ticker, self.k)
             ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
             # logger.debug("MA: " + str(ma))
@@ -112,7 +114,9 @@ class VolatilityBreakout:
                 ticker = balance['unit_currency'] + '-' + currency
                 # print(currency + " = " + str(self.exchange_api.get_current_price(ticker)))
                 result = self.exchange.sell_market_order(ticker, balance['balance'])
-                logger.debug("Sell " + ticker + ", " + balance['balance'] + " " + str(result))
+                sell_msg = "Sell " + ticker + ", " + str(balance['balance']) + " " + str(result)
+                logger.debug(sell_msg)
+                sendMessageToChat(sell_msg)
 
     def update_target_tickers(self, start_time, end_time):
         if os.path.isfile(self.target_tickers_file) is False:
