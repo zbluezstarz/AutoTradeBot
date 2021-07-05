@@ -4,6 +4,7 @@ import datetime
 import time
 import os
 
+
 class VolatilityBreakout:
     def __init__(self, exchange, api):
         self.name = "VolatilityBreakout"
@@ -46,7 +47,7 @@ class VolatilityBreakout:
         if float(balance) > 0.0:
             ret_msg = target_ticker + ' already has (' + str(balance) + ')'
             logger.debug(ret_msg)
-            #sendMessageToChat(ret_msg)
+            # sendMessageToChat(ret_msg)
         else:
             target_price = self.get_target_price(target_ticker, self.k)
             ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
@@ -88,8 +89,8 @@ class VolatilityBreakout:
                     logger.debug(target_ticker + " >>> " + str(profit_rate))
                     if (profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
                         result = self.exchange.sell_market_order(target_ticker, balance['balance'])
-                        if 'error' not in result.keys():
-                            remain_buy_list.append(target_ticker)
+                        # if 'error' not in result.keys():
+                        #    remain_buy_list.append(target_ticker)
                         logger.debug("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
                         sendMessageToChat("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
                 else:
