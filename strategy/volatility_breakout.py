@@ -104,7 +104,7 @@ class VolatilityBreakout(CryptoStrategy):
             avg_buy_price = balance['avg_buy_price']
             currency = balance['currency']
             # if currency == 'KRW':
-            if avg_buy_price is '0':
+            if avg_buy_price == '0':
                 continue
             else:
                 logger.debug(balance)
