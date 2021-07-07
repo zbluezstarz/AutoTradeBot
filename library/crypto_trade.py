@@ -1,4 +1,3 @@
-from log.logging_api import *
 from config import crypto_param
 from library import crypto_api
 from strategy.volatility_breakout import *
@@ -30,13 +29,13 @@ class CryptoTrade:
         start_time, end_time = self.current_strategy.get_turn_start_end_time()
         init_msg = "Init Target Tickers"
         logger.info(init_msg)
-        sendMessageToChat(init_msg)
+        send_message_to_chat(init_msg)
         str(start_time) + " ~ " + str(end_time)
         self.target_tickers = self.current_strategy.update_target_tickers(start_time, end_time)
         self.remain_buy_list = self.target_tickers
         init_msg = "Init Trade Completed"
         logger.info(init_msg)
-        sendMessageToChat(init_msg)
+        send_message_to_chat(init_msg)
 
         return start_time, end_time
 
@@ -70,7 +69,7 @@ class CryptoTrade:
 
             except Exception as e:
                 logger.critical(e)
-                sendMessageToChat(e)
+                send_message_to_chat(e)
 
             time.sleep(self.transaction_time)
 

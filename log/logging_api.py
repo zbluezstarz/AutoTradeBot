@@ -1,15 +1,15 @@
-import sys
 import datetime
 import time
 import logging.handlers
 import telegram
 
+
 def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=logging.DEBUG, file_name="debug.log"):
     # logger instance 생성
-    logger = logging.getLogger(logger_name)
+    logger_obj = logging.getLogger(logger_name)
 
     # logger level 설정
-    logger.setLevel(logging.DEBUG)
+    logger_obj.setLevel(logging.DEBUG)
 
     # formatter instance 생성
     log_format = "[%(levelname)+8s|%(filename)+25s:%(lineno)+4s] %(asctime)s > %(message)s"
@@ -28,10 +28,11 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
     file_handler.setFormatter(formatter)
 
     # logger handler 추가
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+    logger_obj.addHandler(stream_handler)
+    logger_obj.addHandler(file_handler)
 
-    return logger
+    return logger_obj
+
 
 now = datetime.datetime.today()
 log_file_name = str(now.year) + (str(now.month)).zfill(2) + (str(now.day)).zfill(2) + ".txt"
@@ -47,9 +48,11 @@ with open("../chat_bot.txt") as f:
 
 chat_bot = telegram.Bot(token=token)
 
-def sendMessageToChat(msg):
+
+def send_message_to_chat(msg):
     chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
-    time.sleep(3) # 3sec sleep to prevent block
+    time.sleep(3)  # 3sec sleep to prevent block
+
 
 if __name__ == "__main__":
     pass

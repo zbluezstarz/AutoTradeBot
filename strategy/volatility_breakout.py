@@ -56,6 +56,11 @@ class VolatilityBreakout(CryptoStrategy):
             return False
 
     def execute_buy_strategy(self, target_tickers, remain_buy_list):
+        logger.debug("{0:^9}".format("ticker") + " | " +
+                     "{0:^9}".format("target") + " | " +
+                     "{0:^9}".format("current") + " | " +
+                     "{0:^9}".format("KRW") + " | "
+                     )
         for target_ticker in target_tickers:
             if target_ticker not in remain_buy_list:
                 logger.info(target_ticker + " already buy")
@@ -66,16 +71,16 @@ class VolatilityBreakout(CryptoStrategy):
             target_price_threshold = target_price + target_price * self.threshold_rate
             current_price = get_current_price(self.exchange_api, target_ticker)
             krw = get_balance(self.exchange, "KRW")
-            logger.debug("{0:<9}".format(target_ticker) + " | " +
-                         "{0:<9}".format(str(int(target_price))) + ":" +
-                         "{0:<9}".format(str(int(current_price))) + ", " +
-                         "{0:<9}".format(str(int(krw)))
+            logger.debug("{0:>9}".format(target_ticker) + " | " +
+                         "{0:>9}".format(str(int(target_price))) + " | " +
+                         "{0:>9}".format(str(int(current_price))) + " | " +
+                         "{0:>9}".format(str(int(krw))) + " | "
                          )
 
             if float(balance) > 0.0:
                 ret_msg = target_ticker + ' already has (' + str(balance) + ')'
                 logger.debug(ret_msg)
-                # sendMessageToChat(ret_msg)
+                # send_message_to_chat(ret_msg)
 
             else:
                 ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
@@ -90,7 +95,7 @@ class VolatilityBreakout(CryptoStrategy):
                             remain_buy_list.remove(target_ticker)
                         buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
                         logger.debug(buy_msg)
-                        sendMessageToChat(buy_msg)
+                        send_message_to_chat(buy_msg)
             time.sleep(0.1)
 
     def execute_sell_strategy(self, remain_buy_list):
@@ -116,11 +121,11 @@ class VolatilityBreakout(CryptoStrategy):
                         # if 'error' not in result.keys():
                         #    remain_buy_list.append(target_ticker)
                         logger.debug("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
-                        sendMessageToChat("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
+                        send_message_to_chat("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
                 else:
                     err_msg = target_ticker + "balance_ticker price under 5000 " + str(balance_ticker_price)
                     logger.debug(err_msg)
-                    sendMessageToChat(err_msg)
+                    send_message_to_chat(err_msg)
 
             time.sleep(0.1)
 
@@ -140,7 +145,7 @@ class VolatilityBreakout(CryptoStrategy):
                 result = self.exchange.sell_market_order(ticker, balance['balance'])
                 sell_msg = "Sell " + ticker + ", " + str(balance['balance']) + " " + str(result)
                 logger.debug(sell_msg)
-                sendMessageToChat(sell_msg)
+                send_message_to_chat(sell_msg)
 
     def update_target_tickers(self, start_time, end_time):
         if os.path.isfile(self.target_tickers_file) is False:
