@@ -1,57 +1,69 @@
 from log.logging_api import *
-from library.coin_api import *
+from library.crypto_api import *
 import datetime
 import time
 import os
 
+from strategy.strategy_abstract import CryptoStrategy
 
-class VolatilityBreakout:
+
+class VolatilityBreakout(CryptoStrategy):
     def __init__(self, exchange, api):
         self.name = "VolatilityBreakout"
         self.is_running = False
         self.exchange_api = api
         self.exchange = exchange
-        self.k = 0.5
+        self.target_tickers = []
+        self.target_tickers_file = "target_tickers.txt"
+        self.count = 0
+        # Parameters
+        self.k = 0.4
         self.moving_average_day = 3
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
         self.loss_cut = -5.0
         self.profit_cut = 10.0
-        self.target_tickers = []
-        self.target_tickers_file = "target_tickers.txt"
-        self.count = 0
-
+        self.threshold_rate = 0.2
         logger.info("Create VolatilityBreakout Strategy Object")
 
     def set_parameters(self):
         logger.debug("Get " + self.name + " Parameters from file")
-        self.k = 0.5
+        self.k = 0.4
         self.moving_average_day = 3
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
         self.loss_cut = -10.0
-        self.profit_cut = 500.0
+        self.profit_cut = 200.0
+        self.threshold_rate = 0.2
         logger.info("Set " + self.name + " Parameters")
 
-    def get_start_end_time(self):
+    def get_turn_start_end_time(self):
         start_time = get_exchane_price_update_time(self.exchange_api)
         end_time = start_time + datetime.timedelta(days=1)
         logger.info("Start " + self.name + " Trading : " + str(start_time) + " ~ " + str(end_time))
         return start_time, end_time
 
-    def is_change_target_ticker(self):
-        pass
-
-    def execute_buy_strategy(self, target_ticker, remain_buy_list):
-        balance = self.exchange.get_balance(ticker=target_ticker)
-        if float(balance) > 0.0:
-            ret_msg = target_ticker + ' already has (' + str(balance) + ')'
-            logger.debug(ret_msg)
-            # sendMessageToChat(ret_msg)
+    def isTurnRestartTiming(self, end_time, running_now):
+        if running_now > (end_time + datetime.timedelta(seconds=60)):
+            return True
         else:
+            return False
+
+    def isRunningTiming(self, start_time, end_time, running_now):
+        if start_time < running_now < end_time - datetime.timedelta(seconds=30):
+            return True
+        else:
+            return False
+
+    def execute_buy_strategy(self, target_tickers, remain_buy_list):
+        for target_ticker in target_tickers:
+            if target_ticker not in remain_buy_list:
+                logger.info(target_ticker + " already buy")
+                continue
+
+            balance = self.exchange.get_balance(ticker=target_ticker)
             target_price = self.get_target_price(target_ticker, self.k)
-            ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
-            # logger.debug("MA: " + str(ma))
+            target_price_threshold = target_price + target_price * self.threshold_rate
             current_price = get_current_price(self.exchange_api, target_ticker)
             krw = get_balance(self.exchange, "KRW")
             logger.debug("{0:<9}".format(target_ticker) + " | " +
@@ -59,23 +71,35 @@ class VolatilityBreakout:
                          "{0:<9}".format(str(int(current_price))) + ", " +
                          "{0:<9}".format(str(int(krw)))
                          )
-            if target_price < current_price and ma < current_price:
-                if krw > 5000.0:
-                    if krw < self.each_ticker_value:
-                        result = self.exchange.buy_market_order(target_ticker, krw * 0.9995)
-                    else:
-                        result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
-                    if 'error' not in result.keys():
-                        remain_buy_list.remove(target_ticker)
-                    buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
-                    logger.debug(buy_msg)
-                    sendMessageToChat(buy_msg)
+
+            if float(balance) > 0.0:
+                ret_msg = target_ticker + ' already has (' + str(balance) + ')'
+                logger.debug(ret_msg)
+                # sendMessageToChat(ret_msg)
+
+            else:
+                ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
+                # logger.debug("MA: " + str(ma))
+                if (target_price < current_price < target_price_threshold) and ma < current_price:
+                    if krw > 5000.0:
+                        if krw < self.each_ticker_value:
+                            result = self.exchange.buy_market_order(target_ticker, krw * 0.9995)
+                        else:
+                            result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
+                        if 'error' not in result.keys():
+                            remain_buy_list.remove(target_ticker)
+                        buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
+                        logger.debug(buy_msg)
+                        sendMessageToChat(buy_msg)
+            time.sleep(0.1)
 
     def execute_sell_strategy(self, remain_buy_list):
         balances = self.exchange.get_balances()
         for balance in balances:
+            avg_buy_price = balance['avg_buy_price']
             currency = balance['currency']
-            if currency == 'KRW':
+            # if currency == 'KRW':
+            if avg_buy_price is '0':
                 continue
             else:
                 logger.debug(balance)
@@ -97,6 +121,8 @@ class VolatilityBreakout:
                     err_msg = target_ticker + "balance_ticker price under 5000 " + str(balance_ticker_price)
                     logger.debug(err_msg)
                     sendMessageToChat(err_msg)
+
+            time.sleep(0.1)
 
     def execute_turn_end_process(self):
         logger.debug("Sell All Tickers")
@@ -130,8 +156,8 @@ class VolatilityBreakout:
 
                 if start_time < file_time < end_time:
                     with open(self.target_tickers_file) as target_ticker_file:
-                        lines = target_ticker_file.readlines()
-                        self.target_tickers = lines[1].split(" ")
+                        local_lines = target_ticker_file.readlines()
+                        self.target_tickers = local_lines[1].split(" ")
                         logger.debug(self.target_tickers)
                 else:
                     self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
