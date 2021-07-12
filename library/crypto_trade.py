@@ -57,7 +57,6 @@ class CryptoTrade:
 
                     start_time, end_time = self.init_trade()
                     self.is_no_action_time = False
-                    break
 
                 else:
                     self.is_no_action_time = True
