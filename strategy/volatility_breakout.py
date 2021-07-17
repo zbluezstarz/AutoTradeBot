@@ -28,8 +28,8 @@ class VolatilityBreakout(CryptoStrategy):
 
     def set_parameters(self):
         logger.debug("Get " + self.name + " Parameters from file")
-        self.k = 0.4
-        self.moving_average_day = 3
+        self.k = 0.5
+        self.moving_average_day = 5
         self.max_ticker_num = 20
         self.each_ticker_value = 10000.0
         self.loss_cut = -10.0
