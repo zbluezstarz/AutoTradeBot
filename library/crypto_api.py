@@ -1,5 +1,6 @@
 import pyupbit
 import datetime
+import pandas
 
 
 def get_exchange_api():
@@ -52,6 +53,41 @@ def write_target_tickers_in_file(file_name, target_tickers):
     file.write(str(file_now) + "\n")
     file.write(' '.join(target_tickers))
     file.close()
+
+
+def get_custom_1days_ohlcv(exchange_api, ticker, end_day_str, end_hours_int, day_num):
+    to_str = str(end_day_str) + "-" + str(end_hours_int+1).zfill(2) + ":00:00"
+    hours_unit = 24
+    df = exchange_api.get_ohlcv(ticker, interval="minute60", count=day_num * hours_unit, to=to_str)
+    index = []
+    data = []
+
+    for i in range(day_num):
+        idx_start = i * hours_unit
+        idx_end = (i+1) * hours_unit
+
+        data.append({
+            'open': df['open'][idx_start],
+            'high': max(list((df['high'][idx_start:idx_end]).values)),
+            'low': min(list((df['low'][idx_start:idx_end]).values)),
+            'close': df['close'][idx_end-1],
+            'volume': sum(list((df['volume'][idx_start:idx_end]).values)),
+            'value': sum(list((df['value'][idx_start:idx_end]).values)),
+            'vol_half1': sum(list((df['volume'][idx_start:idx_start+int(hours_unit/2)]).values)),
+            'vol_half2': sum(list((df['volume'][idx_start + int(hours_unit/2):idx_end]).values)),
+            'val_half1': sum(list((df['value'][idx_start:idx_start + int(hours_unit / 2)]).values)),
+            'val_half2': sum(list((df['value'][idx_start + int(hours_unit / 2):idx_end]).values)),
+            'profit': (df['close'][idx_end-1] - df['open'][idx_start]) / df['open'][idx_start] * 100.0,
+            'pro_half1': (df['close'][idx_end-int(hours_unit / 2) - 1] - df['open'][idx_start]) /
+             df['open'][idx_start] * 100.0,
+            'pro_half2': (df['close'][idx_end-1] - df['close'][idx_end-int(hours_unit / 2) - 1]) /
+             df['open'][idx_start] * 100.0
+
+            }
+        )
+        index.append(df.index[idx_end-1])
+    new_df = pandas.DataFrame(data, index=index)
+    return df, new_df
 
 
 if __name__ == "__main__":
