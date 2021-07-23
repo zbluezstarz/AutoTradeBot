@@ -1,3 +1,5 @@
+import time
+
 import pyupbit
 import datetime
 import pandas
@@ -56,11 +58,32 @@ def write_target_tickers_in_file(file_name, target_tickers):
 
 
 def get_custom_1days_ohlcv(exchange_api, ticker, end_day_str, end_hours_int, day_num):
-    to_str = str(end_day_str) + "-" + str(end_hours_int+1).zfill(2) + ":00:00"
+    to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
     hours_unit = 24
-    df = exchange_api.get_ohlcv(ticker, interval="minute60", count=day_num * hours_unit, to=to_str)
+    remain_day_num = day_num
+    df = exchange_api.get_ohlcv(ticker, interval="minute60", count=1 * hours_unit, to=to_str)
+    remain_day_num -= 1
+    to_str -= datetime.timedelta(days=1)
+
+    while remain_day_num > 0:
+        print(remain_day_num)
+        new_1day_df = exchange_api.get_ohlcv(ticker, interval="minute60", count=1 * hours_unit, to=to_str)
+        if new_1day_df is None:
+            continue
+        if new_1day_df.shape[0] % 24 != 0:
+            print("== sample is shortage")
+            return None, None
+        df = pandas.concat([new_1day_df, df])
+        remain_day_num -= 1
+        to_str -= datetime.timedelta(days=1)
+        time.sleep(0.1)
+
     index = []
     data = []
+
+    if ((day_num * hours_unit) > df.shape[0]) or df.shape[0] % 24 != 0:
+        print("** sample is shortage")
+        return None, None
 
     for i in range(day_num):
         idx_start = i * hours_unit
