@@ -1,0 +1,3 @@
+Exchange : upbit
+Strategy : VolatilityBreakout
+TransSec : 10

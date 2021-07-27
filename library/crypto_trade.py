@@ -1,4 +1,5 @@
 from config import crypto_param
+from config.crypto_param import *
 from library import crypto_api
 from strategy.volatility_breakout import *
 
@@ -9,18 +10,27 @@ class CryptoTrade:
         self.target_tickers = []
         self.remain_buy_list = []
         self.is_no_action_time = False
+        self.running_timing = False
+        self.restart_timing = False
+        self.count = 0
 
         logger.info("Get Crypto Class Parameter")
-        crypto_param.get_crypto_parameter()
-        self.transaction_time = 10.0
+        crypto_param.print_crypto_parameter()
+        self.transaction_time = float(crypto_param.transaction_sec)
 
         logger.info("Connect Exchange")
-        self.exchange_obj = crypto_api.connect_exchange("../key.txt")
-        self.exchange_api = crypto_api.get_exchange_api()
+        self.exchange_api = crypto_api.connect_exchange(crypto_param.exchange, "../key.txt")
+        self.quotation_api = crypto_api.get_quotation_api(crypto_param.exchange)
 
         logger.info("Create Strategy Object")
         self.current_strategy = \
-            VolatilityBreakout(self.exchange_obj, self.exchange_api)
+            VolatilityBreakout(self.exchange_api, self.quotation_api)
+
+        if crypto_param.exchange == "backtest":
+            self.current_strategy.set_start_time(self.quotation_api.get_sim_start_time())
+
+            self.running_timing = True
+            self.init_back_index = self.quotation_api.get_sim_index_update()
 
         logger.info("Set Strategy Parameters")
         self.current_strategy.set_parameters()
@@ -49,19 +59,42 @@ class CryptoTrade:
         while self.is_running:
             try:
                 running_now = datetime.datetime.now()
-                if self.current_strategy.isRunningTiming(start_time, end_time, running_now):
-                    self.current_strategy.execute_buy_strategy(self.target_tickers, self.remain_buy_list)
 
-                elif self.current_strategy.isTurnRestartTiming(end_time, running_now):
+                if crypto_param.exchange == "backtest":
+                    self.count += 1
+                    if self.count > 24:
+                        self.count = 0
+                        self.running_timing = False
+                        self.restart_timing = True
+                else:
+                    self.running_timing = self.current_strategy.isRunningTiming(start_time, end_time, running_now)
+                    self.restart_timing = self.current_strategy.isTurnRestartTiming(end_time, running_now)
+
+                if self.running_timing is True:
+                    self.current_strategy.execute_buy_strategy(self.target_tickers, self.remain_buy_list)
+                    if crypto_param.exchange == "backtest":
+                        self.quotation_api.set_sim_sub_index_update()
+                        index = self.quotation_api.get_sim_index_update() - self.init_back_index
+                        sub_index = self.quotation_api.get_sim_sub_index_update() - \
+                                    (self.quotation_api.get_sim_index_update() * 24)
+                        logger.debug("Simulation(" + str(index) + "-" + str(sub_index) + ")")
+
+                elif self.restart_timing is True:
                     self.current_strategy.execute_turn_end_process()
 
                     start_time, end_time = self.init_trade()
                     self.is_no_action_time = False
 
+                    if crypto_param.exchange == "backtest":
+                        self.running_timing = True
+                        self.restart_timing = False
+                        self.quotation_api.set_sim_index_update()
+                        logger.debug("Restart")
+
                 else:
                     self.is_no_action_time = True
                     logger.debug("No Action Time~")
-                    time.sleep(10)
+                    time.sleep(3600)
 
                 if not self.is_no_action_time:
                     self.current_strategy.execute_sell_strategy(self.remain_buy_list)

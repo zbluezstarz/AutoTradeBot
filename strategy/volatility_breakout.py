@@ -8,11 +8,11 @@ from strategy.strategy_abstract import CryptoStrategy
 
 
 class VolatilityBreakout(CryptoStrategy):
-    def __init__(self, exchange, api):
+    def __init__(self, exchange_api, quotation_api):
         self.name = "VolatilityBreakout"
         self.is_running = False
-        self.exchange_api = api
-        self.exchange = exchange
+        self.quotation_api = quotation_api
+        self.exchange_api = exchange_api
         self.target_tickers = []
         self.target_tickers_file = "target_tickers.txt"
         self.count = 0
@@ -24,6 +24,11 @@ class VolatilityBreakout(CryptoStrategy):
         self.loss_cut = -5.0
         self.profit_cut = 10.0
         self.threshold_rate = 0.2
+        self.reference_time = 0
+        self.delta_time = datetime.timedelta(days=1)
+        now = datetime.datetime.now()
+        self.start_time = datetime.datetime(now.year, now.month, now.day, self.reference_time, 0, 0)
+
         logger.info("Create VolatilityBreakout Strategy Object")
 
     def set_parameters(self):
@@ -37,9 +42,16 @@ class VolatilityBreakout(CryptoStrategy):
         self.threshold_rate = 0.2
         logger.info("Set " + self.name + " Parameters")
 
+    def set_start_time(self, start_time):
+        self.start_time = start_time
+
+    def get_start_time(self):
+        return self.start_time
+
     def get_turn_start_end_time(self):
-        start_time = get_exchane_price_update_time(self.exchange_api)
+        start_time = self.get_start_time()
         end_time = start_time + datetime.timedelta(days=1)
+        self.set_start_time(start_time + self.delta_time)
         logger.info("Start " + self.name + " Trading : " + str(start_time) + " ~ " + str(end_time))
         return start_time, end_time
 
@@ -66,11 +78,11 @@ class VolatilityBreakout(CryptoStrategy):
                 logger.info(target_ticker + " already buy")
                 continue
 
-            balance = self.exchange.get_balance(ticker=target_ticker)
+            balance = self.exchange_api.get_balance(ticker=target_ticker)
             target_price = self.get_target_price(target_ticker, self.k)
             target_price_threshold = target_price + target_price * self.threshold_rate
-            current_price = get_current_price(self.exchange_api, target_ticker)
-            krw = get_balance(self.exchange, "KRW")
+            current_price = get_current_price(self.quotation_api, target_ticker)
+            krw = get_balance(self.exchange_api, "KRW")
             logger.debug("{0:>9}".format(target_ticker) + " | " +
                          "{0:>9}".format(str(int(target_price))) + " | " +
                          "{0:>9}".format(str(int(current_price))) + " | " +
@@ -83,23 +95,24 @@ class VolatilityBreakout(CryptoStrategy):
                 # send_message_to_chat(ret_msg)
 
             else:
-                ma = get_moving_average(self.exchange_api, target_ticker, self.moving_average_day)
+                ma = get_moving_average(self.quotation_api, target_ticker, self.moving_average_day)
                 # logger.debug("MA: " + str(ma))
                 if (target_price < current_price < target_price_threshold) and ma < current_price:
                     if krw > 5000.0:
                         if krw < self.each_ticker_value:
-                            result = self.exchange.buy_market_order(target_ticker, krw * 0.9995)
+                            result = self.exchange_api.buy_market_order(target_ticker, krw * 0.9995)
                         else:
-                            result = self.exchange.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
+                            result = self.exchange_api.buy_market_order(target_ticker, self.each_ticker_value * 0.9995)
+
                         if 'error' not in result.keys():
                             remain_buy_list.remove(target_ticker)
                         buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
                         logger.debug(buy_msg)
                         send_message_to_chat(buy_msg)
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
     def execute_sell_strategy(self, remain_buy_list):
-        balances = self.exchange.get_balances()
+        balances = self.exchange_api.get_balances()
         for balance in balances:
             avg_buy_price = balance['avg_buy_price']
             currency = balance['currency']
@@ -109,7 +122,7 @@ class VolatilityBreakout(CryptoStrategy):
             else:
                 logger.debug(balance)
                 target_ticker = balance['unit_currency'] + '-' + currency
-                current_price = float(self.exchange_api.get_current_price(target_ticker))
+                current_price = float(self.quotation_api.get_current_price(target_ticker))
                 balance_ticker_price = float(balance['balance']) * current_price
                 if balance_ticker_price >= 5000.0:
                     logger.debug(currency + " = " + str(current_price))
@@ -117,7 +130,7 @@ class VolatilityBreakout(CryptoStrategy):
                     profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
                     logger.debug(target_ticker + " >>> " + str(profit_rate))
                     if (profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
-                        result = self.exchange.sell_market_order(target_ticker, balance['balance'])
+                        result = self.exchange_api.sell_market_order(target_ticker, balance['balance'])
                         # if 'error' not in result.keys():
                         #    remain_buy_list.append(target_ticker)
                         logger.debug("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
@@ -131,7 +144,7 @@ class VolatilityBreakout(CryptoStrategy):
 
     def execute_turn_end_process(self):
         logger.debug("Sell All Tickers")
-        balances = self.exchange.get_balances()
+        balances = self.exchange_api.get_balances()
         # print(balances)
         for balance in balances:
             currency = balance['currency']
@@ -141,15 +154,15 @@ class VolatilityBreakout(CryptoStrategy):
             else:
                 logger.debug(balance)
                 ticker = balance['unit_currency'] + '-' + currency
-                # print(currency + " = " + str(self.exchange_api.get_current_price(ticker)))
-                result = self.exchange.sell_market_order(ticker, balance['balance'])
+                # print(currency + " = " + str(self.quotation_api.get_current_price(ticker)))
+                result = self.exchange_api.sell_market_order(ticker, balance['balance'])
                 sell_msg = "Sell " + ticker + ", " + str(balance['balance']) + " " + str(result)
                 logger.debug(sell_msg)
                 send_message_to_chat(sell_msg)
 
     def update_target_tickers(self, start_time, end_time):
         if os.path.isfile(self.target_tickers_file) is False:
-            self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
+            self.target_tickers = self.get_target_ticker(self.quotation_api, self.max_ticker_num)
             write_target_tickers_in_file(self.target_tickers_file, self.target_tickers)
         else:
             logger.info(self.target_tickers_file + " is already Exist")
@@ -165,37 +178,32 @@ class VolatilityBreakout(CryptoStrategy):
                         self.target_tickers = local_lines[1].split(" ")
                         logger.debug(self.target_tickers)
                 else:
-                    self.target_tickers = self.get_target_ticker(self.exchange_api, self.max_ticker_num)
+                    self.target_tickers = self.get_target_ticker(self.quotation_api, self.max_ticker_num)
                     write_target_tickers_in_file(self.target_tickers_file, self.target_tickers)
                     logger.debug(self.target_tickers)
 
         return self.target_tickers
 
     def get_target_price(self, ticker, k):
-        df = self.exchange_api.get_ohlcv(ticker, interval="day", count=2)
+        df = self.quotation_api.get_ohlcv(ticker, interval="day", count=1)
         target_price = df.iloc[0]['close'] + (df.iloc[0]['high'] - df.iloc[0]['low']) * k
         return target_price
 
-    def get_target_ticker(self, exchange_api, max_ticker_num):
+    def get_target_ticker(self, quotation_api, max_ticker_num):
         self.count = 1
         coin_values = dict()
         trade_value_top_coin_name = []
-        coin_names = exchange_api.fetch_market()
+        tickers = quotation_api.get_tickers()
         logger.debug("Get Ticker Values Start!")
-        for coin_name in coin_names:
+        for ticker in tickers:
             logger.debug(str(self.count))
             self.count += 1
-            df = exchange_api.get_ohlcv(ticker=coin_name['market'])  # count=val_search_day)
-            coin_values[coin_name['market']] = df.iloc[-2]['value']
-            time.sleep(0.1)
+            df = quotation_api.get_ohlcv(ticker=ticker, count=1)  # count=val_search_day)
+            coin_values[ticker] = df.iloc[0]['value']
+            # time.sleep(0.1)
         logger.debug("Get Ticker Values End!")
-        # logger.debug(coin_values)
         coin_values_reverse = sorted(coin_values.items(), reverse=True, key=lambda item: item[1])
-        # logger.debug(coin_values_reverse)
         trade_value_top = coin_values_reverse[:max_ticker_num]
-        # logger.debug(len(trade_value_top), trade_value_top)
         for i in range(max_ticker_num):
             trade_value_top_coin_name.append(trade_value_top[i][0])
-        # logger.debug(trade_value_top)
-        # logger.debug(trade_value_top_coin_name)
         return trade_value_top_coin_name
