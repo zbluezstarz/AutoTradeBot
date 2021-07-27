@@ -1,6 +1,8 @@
 import pandas
 from log.logging_api import *
 
+# TODO : Reduce Simulation Running Time
+
 
 class BackExchange:
     def __init__(self):
@@ -64,7 +66,7 @@ class BackExchange:
 
                 return balance
         except Exception as x:
-            print(x.__class__.__name__)
+            logger.debug(x.__class__.__name__)
             return None
 
     def get_orderbook(self, tickers="KRW-BTC"):
@@ -75,19 +77,19 @@ class BackExchange:
             df = self.df_dict[tickers]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
             # print(slicing_df)
+            price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
             contents = [{'market': tickers,
                          'timestamp': slicing_df.index[0],
                          'total_ask_size': float(slicing_df['volume']),
                          'total_bid_size': float(slicing_df['volume']),
-                         'orderbook_units': [{'ask_price': float(slicing_df['high']),
-                                              'bid_price': float(slicing_df['low']),
+                         'orderbook_units': [{'ask_price': str(price),
+                                              'bid_price': str(price),
                                               'ask_size': float(slicing_df['volume']),
                                               'bid_size': float(slicing_df['volume'])}]}]
 
-            # logger.debug("*****************")
             return contents
         except Exception as x:
-            print(x.__class__.__name__)
+            logger.debug(x.__class__.__name__)
             return None
 
     def buy_market_order(self, ticker, price, contain_req=False):
@@ -106,9 +108,10 @@ class BackExchange:
                     break
                 else:
                     i += 1
-			# logger.debug(self.sim_balance)
+            # logger.debug(self.sim_balance)
             if is_already_has_ticker is True:
-                target_price = float(slicing_df['high'])
+                # target_price = float(slicing_df['high'])
+                target_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
                 total_price = (float(self.sim_balance[i]['avg_buy_price']) * float(self.sim_balance[i]['balance']))\
                                  + float(price)
                 balance = float(price) / target_price + float(self.sim_balance[i]['balance'])
@@ -116,7 +119,8 @@ class BackExchange:
                 self.sim_balance[i]['balance'] = str(balance)
                 self.sim_balance[i]['avg_buy_price'] = str(avg_buy_price)
             else:
-                avg_buy_price = float(slicing_df['high'])
+                # avg_buy_price = float(slicing_df['high'])
+                avg_buy_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
                 balance = float(price) / avg_buy_price
                 self.sim_balance.append({'currency': ticker_name,
                                          'balance': str(balance),
@@ -149,10 +153,8 @@ class BackExchange:
                       'locked': str((float(price) * (1.0 + self.fee_ratio))),
                       'executed_volume': '0.0',
                       'trades_count': 0}
-
-            print(self.sim_balance)
-            print(result)
-
+            # print(self.sim_balance)
+            # print(result)
             return result
         except Exception as x:
             logger.debug(x.__class__.__name__)
@@ -161,10 +163,11 @@ class BackExchange:
     def get_current_price(self, order_currency, payment_currency="KRW"):
         resp = None
         try:
-            ticker = payment_currency + "-" + order_currency
             df = self.df_dict[order_currency]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
-            resp = float(slicing_df['close'])
+            price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+            # resp = float(slicing_df['close'])
+            resp = price
 
             return resp
 
@@ -180,7 +183,9 @@ class BackExchange:
             i = 0
             for sim_balance in self.sim_balance:
                 if sim_balance['currency'] == ticker_name:
-                    self.start_money += int(float(slicing_df['close']) * (1.0 - self.fee_ratio))
+                    price = (slicing_df['high'] + slicing_df['low']) / 2.0
+                    # price = float(slicing_df['close'])
+                    self.start_money += int(price * (1.0 - self.fee_ratio))
                     break
                 else:
                     i += 1
