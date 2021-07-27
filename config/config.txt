@@ -1,3 +1,4 @@
 Exchange : upbit
 Strategy : VolatilityBreakout
 TransSec : 10
+ChatSleep : 3
