@@ -1,5 +1,3 @@
-import datetime
-
 import pandas
 from log.logging_api import *
 
@@ -108,7 +106,7 @@ class BackExchange:
                     break
                 else:
                     i += 1
-
+			# logger.debug(self.sim_balance)
             if is_already_has_ticker is True:
                 target_price = float(slicing_df['high'])
                 total_price = (float(self.sim_balance[i]['avg_buy_price']) * float(self.sim_balance[i]['balance']))\
@@ -135,6 +133,7 @@ class BackExchange:
                                    'avg_buy_price': '0',
                                    'avg_buy_price_modified': True,
                                    'unit_currency': 'KRW'}
+            # logger.debug(self.sim_balance)
             result = {'uuid': 'c20f1a3c-3890-4b9b-b99b-f952bf698f7b',
                       'side': 'bid',
                       'ord_type': 'price',
@@ -156,27 +155,68 @@ class BackExchange:
 
             return result
         except Exception as x:
-            print(x.__class__.__name__)
+            logger.debug(x.__class__.__name__)
             return None
 
     def get_current_price(self, order_currency, payment_currency="KRW"):
         resp = None
         try:
             ticker = payment_currency + "-" + order_currency
-            df = self.df_dict[ticker]
+            df = self.df_dict[order_currency]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
-            print(ticker)
-            print(slicing_df)
             resp = float(slicing_df['close'])
 
-            print("===========")
-            print(resp)
-            print("***********")
             return resp
 
-        except Exception:
-            print(x.__class__.__name__)
+        except Exception as x:
+            logger.debug(x.__class__.__name__)
             return resp
+
+    def sell_market_order(self, ticker, volume, contain_req=False):
+        try:
+            df = self.df_dict[ticker]
+            slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
+            ticker_name = str(ticker).split("-")[1].strip()
+            i = 0
+            for sim_balance in self.sim_balance:
+                if sim_balance['currency'] == ticker_name:
+                    self.start_money += int(float(slicing_df['close']) * (1.0 - self.fee_ratio))
+                    break
+                else:
+                    i += 1
+            # logger.debug(self.sim_balance)
+            del self.sim_balance[i]
+
+            self.sim_balance[0] = {'currency': 'KRW',
+                                   'balance': str(self.start_money),
+                                   'locked': '0.0',
+                                   'avg_buy_price': '0',
+                                   'avg_buy_price_modified': True,
+                                   'unit_currency': 'KRW'}
+
+            # logger.debug("sell_market_order " + ticker + str(volume))
+            # logger.debug(self.sim_balance)
+
+            result = {'uuid': '62a6a95a-eec8-4bd3-a0fc-7981fb64db83',
+                      'side': 'ask',
+                      'ord_type': 'market',
+                      'price': None,
+                      'state': 'wait',
+                      'market': ticker,
+                      'created_at': str(datetime.datetime.now()),
+                      'volume': str(volume),
+                      'remaining_volume': str(volume),
+                      'reserved_fee': '0.0',
+                      'remaining_fee': '0.0',
+                      'paid_fee': '0.0',
+                      'locked': str(volume),
+                      'executed_volume': '0.0',
+                      'trades_count': 0}
+
+            return result
+        except Exception as x:
+            logger.debug(x.__class__.__name__)
+            return None
 
     def get_sim_start_time(self):
         file_name = "db/KRW-BTC_mod.xlsx"
