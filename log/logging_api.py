@@ -49,9 +49,9 @@ with open("../chat_bot.txt") as f:
 chat_bot = telegram.Bot(token=token)
 
 
-def send_message_to_chat(msg):
+def send_message_to_chat(msg, sleep_time=3):
     chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
-    time.sleep(3)  # 3sec sleep to prevent block
+    time.sleep(sleep_time)  # 3sec sleep to prevent block
 
 
 if __name__ == "__main__":
