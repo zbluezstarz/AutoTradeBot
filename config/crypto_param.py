@@ -13,6 +13,7 @@ class CryptoParameter:
         logger.info("Exchange : " + self.exchange)
         logger.info("Strategy : " + self.strategy)
         logger.info("Transaction : " + self.transaction_sec)
+        logger.info("Chat_Sleep : " + self.chat_sleep_time)
 
 
 crypto_param = CryptoParameter()

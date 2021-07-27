@@ -82,8 +82,8 @@ class BackExchange:
                          'timestamp': slicing_df.index[0],
                          'total_ask_size': float(slicing_df['volume']),
                          'total_bid_size': float(slicing_df['volume']),
-                         'orderbook_units': [{'ask_price': str(price),
-                                              'bid_price': str(price),
+                         'orderbook_units': [{'ask_price': price,
+                                              'bid_price': price,
                                               'ask_size': float(slicing_df['volume']),
                                               'bid_size': float(slicing_df['volume'])}]}]
 
