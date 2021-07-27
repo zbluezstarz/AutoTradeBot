@@ -17,6 +17,7 @@ class CryptoTrade:
         logger.info("Get Crypto Class Parameter")
         crypto_param.print_crypto_parameter()
         self.transaction_time = float(crypto_param.transaction_sec)
+        self.chat_sleep_time = float(crypto_param.chat_sleep_time)
 
         logger.info("Connect Exchange")
         self.exchange_api = crypto_api.connect_exchange(crypto_param.exchange, "../key.txt")
@@ -33,19 +34,19 @@ class CryptoTrade:
             self.init_back_index = self.quotation_api.get_sim_index_update()
 
         logger.info("Set Strategy Parameters")
-        self.current_strategy.set_parameters()
+        self.current_strategy.set_parameters(crypto_param)
 
     def init_trade(self):
         start_time, end_time = self.current_strategy.get_turn_start_end_time()
         init_msg = "Init Target Tickers"
         logger.info(init_msg)
-        send_message_to_chat(init_msg)
+        send_message_to_chat(init_msg, self.chat_sleep_time)
         str(start_time) + " ~ " + str(end_time)
         self.target_tickers = self.current_strategy.update_target_tickers(start_time, end_time)
         self.remain_buy_list = self.target_tickers
         init_msg = "Init Trade Completed"
         logger.info(init_msg)
-        send_message_to_chat(init_msg)
+        send_message_to_chat(init_msg, self.chat_sleep_time)
 
         return start_time, end_time
 
@@ -62,7 +63,7 @@ class CryptoTrade:
 
                 if crypto_param.exchange == "backtest":
                     self.count += 1
-                    if self.count > 24:
+                    if self.count > 24:  # TODO : Set 1day simulation sample count(1~24)
                         self.count = 0
                         self.running_timing = False
                         self.restart_timing = True
@@ -90,6 +91,11 @@ class CryptoTrade:
                         self.restart_timing = False
                         self.quotation_api.set_sim_index_update()
                         logger.debug("Restart")
+
+                    krw = crypto_api.get_balance(self.exchange_api, "KRW")
+
+                    logger.info("****** " + str(krw) + " ******")
+                    # TODO : MDD logging
 
                 else:
                     self.is_no_action_time = True
