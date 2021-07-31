@@ -41,7 +41,7 @@ class VolatilityBreakout(CryptoStrategy):
         self.loss_cut = -10.0
         self.profit_cut = 200.0
         self.threshold_rate = 0.2
-        self.chat_sleep_time = crypto_param.chat_sleep_time
+        self.chat_sleep_time = float(crypto_param.chat_sleep_time)
         logger.info("Set " + self.name + " Parameters")
 
     def set_start_time(self, start_time):
@@ -108,7 +108,7 @@ class VolatilityBreakout(CryptoStrategy):
 
                         if 'error' not in result.keys():
                             remain_buy_list.remove(target_ticker)
-                        buy_msg = "Buy " + target_ticker + " (" + str(target_price) + "), " + str(result)
+                        buy_msg = "Buy " + target_ticker + " (" + str(current_price) + "), " + str(result)
                         logger.debug(buy_msg)
                         send_message_to_chat(buy_msg, self.chat_sleep_time)
             # time.sleep(0.1)
@@ -135,9 +135,10 @@ class VolatilityBreakout(CryptoStrategy):
                         result = self.exchange_api.sell_market_order(target_ticker, balance['balance'])
                         # if 'error' not in result.keys():
                         #    remain_buy_list.append(target_ticker)
-                        logger.debug("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result))
-                        send_message_to_chat("Sell " + target_ticker + ", " + balance['balance'] + " " + str(result)\
-                                             , self.chat_sleep_time)
+                        sell_msg = "Sell " + target_ticker + " (" + str(current_price) + "," + str(profit_rate)\
+                                   + "%), " + str(result)
+                        logger.debug(sell_msg)
+                        send_message_to_chat(sell_msg, self.chat_sleep_time)
                 else:
                     err_msg = target_ticker + "balance_ticker price under 5000 " + str(balance_ticker_price)
                     logger.debug(err_msg)
