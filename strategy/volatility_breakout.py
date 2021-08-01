@@ -70,11 +70,13 @@ class VolatilityBreakout(CryptoStrategy):
             return False
 
     def execute_buy_strategy(self, target_tickers, remain_buy_list):
+        '''
         logger.debug("{0:^9}".format("ticker") + " | " +
                      "{0:^9}".format("target") + " | " +
                      "{0:^9}".format("current") + " | " +
                      "{0:^9}".format("KRW") + " | "
                      )
+        '''
         for target_ticker in target_tickers:
             if target_ticker not in remain_buy_list:
                 logger.info(target_ticker + " already buy")
@@ -85,12 +87,13 @@ class VolatilityBreakout(CryptoStrategy):
             target_price_threshold = target_price + target_price * self.threshold_rate
             current_price = get_current_price(self.quotation_api, target_ticker)
             krw = get_balance(self.exchange_api, "KRW")
+            '''
             logger.debug("{0:>9}".format(target_ticker) + " | " +
                          "{0:>9}".format(str(int(target_price))) + " | " +
                          "{0:>9}".format(str(int(current_price))) + " | " +
                          "{0:>9}".format(str(int(krw))) + " | "
                          )
-
+            '''
             if float(balance) > 0.0:
                 ret_msg = target_ticker + ' already has (' + str(balance) + ')'
                 logger.debug(ret_msg)
@@ -122,15 +125,15 @@ class VolatilityBreakout(CryptoStrategy):
             if avg_buy_price == '0':
                 continue
             else:
-                logger.debug(balance)
+                # logger.debug(balance)
                 target_ticker = balance['unit_currency'] + '-' + currency
                 current_price = float(self.quotation_api.get_current_price(target_ticker))
                 balance_ticker_price = float(balance['balance']) * current_price
                 if balance_ticker_price >= 5000.0:
-                    logger.debug(currency + " = " + str(current_price))
+                    # logger.debug(currency + " = " + str(current_price))
                     avg_buy_price = float(balance['avg_buy_price'])
                     profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
-                    logger.debug(target_ticker + " >>> " + str(profit_rate))
+                    # logger.debug(target_ticker + " >>> " + str(profit_rate))
                     if (profit_rate < self.loss_cut) or (profit_rate > self.profit_cut):
                         result = self.exchange_api.sell_market_order(target_ticker, balance['balance'])
                         # if 'error' not in result.keys():
@@ -149,20 +152,26 @@ class VolatilityBreakout(CryptoStrategy):
     def execute_turn_end_process(self):
         logger.debug("Sell All Tickers")
         balances = self.exchange_api.get_balances()
-        # print(balances)
-        for balance in balances:
+        # logger.debug(balances)
+
+        for balance in balances[:]:
             currency = balance['currency']
-            # print(currency)
+            # logger.debug(balance)
             if currency == 'KRW':
                 continue
             else:
-                logger.debug(balance)
+                # logger.debug(balance)
                 ticker = balance['unit_currency'] + '-' + currency
                 # print(currency + " = " + str(self.quotation_api.get_current_price(ticker)))
                 result = self.exchange_api.sell_market_order(ticker, balance['balance'])
-                sell_msg = "Sell " + ticker + ", " + str(balance['balance']) + " " + str(result)
+                # sell_msg = "Sell " + ticker + ", " + str(balance['balance']) + " " + str(result)
+                avg_buy_price = float(balance['avg_buy_price'])
+                current_price = float(self.quotation_api.get_current_price(ticker))
+                profit_rate = ((current_price - avg_buy_price) / avg_buy_price) * 100.0
+                sell_msg = "Sell " + ticker + " (" + str(current_price) + "," + str(profit_rate) + "%), " + str(result)
                 logger.debug(sell_msg)
                 send_message_to_chat(sell_msg, self.chat_sleep_time)
+            # logger.debug(balances)
 
     def update_target_tickers(self, start_time, end_time):
         if os.path.isfile(self.target_tickers_file) is False:
@@ -180,7 +189,7 @@ class VolatilityBreakout(CryptoStrategy):
                     with open(self.target_tickers_file) as target_ticker_file:
                         local_lines = target_ticker_file.readlines()
                         self.target_tickers = local_lines[1].split(" ")
-                        logger.debug(self.target_tickers)
+                        logger.info(self.target_tickers)
                 else:
                     self.target_tickers = self.get_target_ticker(self.quotation_api, self.max_ticker_num)
                     write_target_tickers_in_file(self.target_tickers_file, self.target_tickers)
@@ -198,14 +207,14 @@ class VolatilityBreakout(CryptoStrategy):
         coin_values = dict()
         trade_value_top_coin_name = []
         tickers = quotation_api.get_tickers()
-        logger.debug("Get Ticker Values Start!")
+        logger.info("Get Ticker Values Start!")
         for ticker in tickers:
-            logger.debug(str(self.count))
+            # logger.debug(str(self.count))
             self.count += 1
             df = quotation_api.get_ohlcv(ticker=ticker, count=1)  # count=val_search_day)
             coin_values[ticker] = df.iloc[0]['value']
             # time.sleep(0.1)
-        logger.debug("Get Ticker Values End!")
+        logger.info("Get Ticker Values End!")
         coin_values_reverse = sorted(coin_values.items(), reverse=True, key=lambda item: item[1])
         trade_value_top = coin_values_reverse[:max_ticker_num]
         for i in range(max_ticker_num):
