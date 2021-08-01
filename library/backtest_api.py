@@ -19,15 +19,21 @@ class BackExchange:
         self.fee_ratio = 0.0005
 
         logger.debug("=== DataFrame Load Start ===")
-        self.df_dict = {}
+        self.df_dict_org = {}
+        self.df_dict_mod = {}
+
         tickers = self.get_tickers()
         count = 0
         for ticker in tickers:
             file_name = "db/" + ticker + "_org.xlsx"
             df = pandas.read_excel(file_name, engine='openpyxl')
             df.set_index('Unnamed: 0', inplace=True)
-            self.df_dict[ticker] = df
-            logger.debug(ticker + " DataFrame is Added " + str(count))
+            self.df_dict_org[ticker] = df
+            file_name = "db/" + ticker + "_mod.xlsx"
+            df = pandas.read_excel(file_name, engine='openpyxl')
+            df.set_index('Unnamed: 0', inplace=True)
+            self.df_dict_mod[ticker] = df
+            logger.debug(ticker + " DataFrame is Loaded " + str(count))
             count += 1
 
     def set_back_exchange(self, acc_key, sec_key):
@@ -42,12 +48,9 @@ class BackExchange:
         return tickers
 
     def get_ohlcv(self, ticker="KRW-BTC", interval="day", count=30, to=None, period=0.1):
-        file_name = "db/" + ticker + "_mod.xlsx"
-        # print(file_name)
-        df = pandas.read_excel(file_name, engine='openpyxl')
-        df.set_index('Unnamed: 0', inplace=True)
+        df = self.df_dict_mod[ticker]
         slicing_df = df.iloc[self.index - count: self.index]
-        # print(slicing_df)
+        # logger.debug(slicing_df)
         return slicing_df
 
     def get_balances(self, contain_req=False):
@@ -74,7 +77,7 @@ class BackExchange:
             # file_name = "db/" + tickers + "_org.xlsx"
             # df = pandas.read_excel(file_name, engine='openpyxl')
             # df.set_index('Unnamed: 0', inplace=True)
-            df = self.df_dict[tickers]
+            df = self.df_dict_org[tickers]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
             # print(slicing_df)
             price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
@@ -94,7 +97,7 @@ class BackExchange:
 
     def buy_market_order(self, ticker, price, contain_req=False):
         try:
-            df = self.df_dict[ticker]
+            df = self.df_dict_org[ticker]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
 
             ticker_name = str(ticker).split("-")[1].strip()
@@ -163,7 +166,7 @@ class BackExchange:
     def get_current_price(self, order_currency, payment_currency="KRW"):
         resp = None
         try:
-            df = self.df_dict[order_currency]
+            df = self.df_dict_org[order_currency]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
             price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
             # resp = float(slicing_df['close'])
@@ -177,7 +180,7 @@ class BackExchange:
 
     def sell_market_order(self, ticker, volume, contain_req=False):
         try:
-            df = self.df_dict[ticker]
+            df = self.df_dict_org[ticker]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
             ticker_name = str(ticker).split("-")[1].strip()
             # logger.debug(ticker_name)
