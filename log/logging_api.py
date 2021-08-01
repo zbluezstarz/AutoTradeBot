@@ -50,8 +50,9 @@ chat_bot = telegram.Bot(token=token)
 
 
 def send_message_to_chat(msg, sleep_time=3.0):
-    chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
-    time.sleep(sleep_time)  # 3sec sleep to prevent block
+    if sleep_time > 0.0:
+        chat_bot.sendMessage(chat_id=chat_id, text=str(msg))
+        time.sleep(sleep_time)  # 3 sec sleep to prevent block
 
 
 if __name__ == "__main__":
