@@ -2,6 +2,7 @@ from config import crypto_param
 from config.crypto_param import *
 from library import crypto_api
 from strategy.volatility_breakout import *
+from strategy.volatility_modi1 import *
 
 
 class CryptoTrade:
@@ -26,7 +27,8 @@ class CryptoTrade:
 
         logger.info("Create Strategy Object")
         self.current_strategy = \
-            VolatilityBreakout(self.exchange_api, self.quotation_api)
+            VolatilityModi1(self.exchange_api, self.quotation_api)
+            # VolatilityBreakout(self.exchange_api, self.quotation_api)
 
         if crypto_param.exchange == "backtest":
             self.current_strategy.set_start_time(self.quotation_api.get_sim_start_time())
