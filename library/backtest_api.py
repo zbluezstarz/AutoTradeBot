@@ -1,4 +1,6 @@
 import pandas
+import pyupbit
+
 from log.logging_api import *
 
 # TODO : Reduce Simulation Running Time
@@ -48,8 +50,14 @@ class BackExchange:
         return tickers
 
     def get_ohlcv(self, ticker="KRW-BTC", interval="day", count=30, to=None, period=0.1):
-        df = self.df_dict_mod[ticker]
-        slicing_df = df.iloc[self.index - count: self.index]
+        slicing_df = None
+        if interval == "minutes60" or interval == "minute60":
+            df = self.df_dict_org[ticker]
+            slicing_df = df.iloc[self.sub_index - count: self.sub_index]
+        else:  # if interval == "day":
+            df = self.df_dict_mod[ticker]
+            slicing_df = df.iloc[self.index - count: self.index]
+
         # logger.debug(slicing_df)
         return slicing_df
 
@@ -233,6 +241,10 @@ class BackExchange:
         df = pandas.read_excel(file_name, engine='openpyxl')
         df.set_index('Unnamed: 0', inplace=True)
         return df.index[self.index-1]
+
+    def set_sim_index(self, index):
+        self.index = index
+        self.sub_index = self.index * 24
 
     def set_sim_index_update(self):
         self.index += 1
