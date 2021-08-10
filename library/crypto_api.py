@@ -111,7 +111,14 @@ def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, da
                             (max(list((df['high'][idx_start:idx_start + int(hours_unit/2)]).values)) - min(list((df['low'][idx_start:idx_start + int(hours_unit/2)]).values))))),
             'nr_half2': 1.0 - ((abs(df['open'][idx_start + int(hours_unit/2)] - df['close'][idx_end-1]) /
                             (max(list((df['high'][idx_start + int(hours_unit/2):idx_end]).values)) - min(list((df['low'][idx_start + int(hours_unit/2):idx_end]).values))))),
-
+            'open_half1': df['open'][idx_start],
+            'open_half2': df['open'][idx_start + int(hours_unit/2)],
+            'close_half1': df['close'][idx_end - int(hours_unit/2) - 1],
+            'close_half2': df['close'][idx_end-1],
+            'high_half1': max(list((df['high'][idx_start:idx_start + int(hours_unit/2)]).values)),
+            'high_half2': max(list((df['high'][idx_start + int(hours_unit/2):idx_end]).values)),
+            'low_half1': min(list((df['low'][idx_start:idx_start + int(hours_unit/2)]).values)),
+            'low_half2': min(list((df['low'][idx_start + int(hours_unit/2):idx_end]).values))
             }
         )
         index.append(df.index[idx_end-1])
@@ -173,7 +180,14 @@ def create_backtest_data_set(quotation_api, ticker, end_day_str, end_hours_int, 
                             (max(list((df['high'][idx_start:idx_start + int(hours_unit/2)]).values)) - min(list((df['low'][idx_start:idx_start + int(hours_unit/2)]).values))))),
             'nr_half2': 1.0 - ((abs(df['open'][idx_start + int(hours_unit/2)] - df['close'][idx_end-1]) /
                             (max(list((df['high'][idx_start + int(hours_unit/2):idx_end]).values)) - min(list((df['low'][idx_start + int(hours_unit/2):idx_end]).values))))),
-
+            'open_half1': df['open'][idx_start],
+            'open_half2': df['open'][idx_start + int(hours_unit / 2)],
+            'close_half1': df['close'][idx_end - int(hours_unit / 2) - 1],
+            'close_half2': df['close'][idx_end - 1],
+            'high_half1': max(list((df['high'][idx_start:idx_start + int(hours_unit / 2)]).values)),
+            'high_half2': max(list((df['high'][idx_start + int(hours_unit / 2):idx_end]).values)),
+            'low_half1': min(list((df['low'][idx_start:idx_start + int(hours_unit / 2)]).values)),
+            'low_half2': min(list((df['low'][idx_start + int(hours_unit / 2):idx_end]).values))
             }
         )
         index.append(df.index[idx_end-1])
