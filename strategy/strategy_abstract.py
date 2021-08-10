@@ -5,7 +5,7 @@ from abc import *
 class CryptoStrategy(metaclass=ABCMeta):
 
     @abstractmethod
-    def set_parameters(self):
+    def set_parameters(self, crypto_param):
         logger.critical(sys._getframe(0).f_code.co_name + " MUST implement!!")
 
     @abstractmethod
