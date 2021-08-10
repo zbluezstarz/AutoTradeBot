@@ -67,7 +67,7 @@ class CryptoTrade:
 
                 if crypto_param.exchange == "backtest":
                     self.count += 1
-                    if self.count > 24:  # TODO : Set 1day simulation sample count(1~24)
+                    if self.count > 12:  # TODO : Set 1day simulation sample count(1~24)
                         self.count = 0
                         self.running_timing = False
                         self.restart_timing = True
