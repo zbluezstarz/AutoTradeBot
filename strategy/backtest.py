@@ -24,7 +24,7 @@ class Backtest:
                 target_tickers_file2 = "../db/" + ticker + "_mod.xlsx"
                 if os.path.isfile(target_tickers_file1) is False:
                     print(ticker)
-                    org_df, mod_df = create_backtest_data_set(pyupbit, ticker, today_str, 0, 1000)
+                    org_df, mod_df = create_backtest_data_set(pyupbit, ticker, today_str, 0, 765)
 
                     if org_df is not None and mod_df is not None:
                         org_df.to_excel(target_tickers_file1)
@@ -43,5 +43,5 @@ class Backtest:
 
 if __name__ == "__main__":
     back_test = Backtest()
-    back_test.run_backtest()
+    back_test.create_backtest_data()
 
