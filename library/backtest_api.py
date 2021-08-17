@@ -37,6 +37,11 @@ class BackExchange:
             logger.debug(ticker + " DataFrame is Loaded " + str(count))
             count += 1
 
+    def calculate_price(self, df):
+        # price = (float(df['high']) + float(df['low'])) / 2.0
+        price = float(df['open'])
+        return price
+
     def set_back_exchange(self, acc_key, sec_key):
         pass
 
@@ -87,7 +92,9 @@ class BackExchange:
             df = self.df_dict_org[tickers]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
             # print(slicing_df)
-            price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+
+            # price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+            price = self.calculate_price(slicing_df)
             contents = [{'market': tickers,
                          'timestamp': slicing_df.index[0],
                          'total_ask_size': float(slicing_df['volume']),
@@ -104,68 +111,92 @@ class BackExchange:
 
     def buy_market_order(self, ticker, price, contain_req=False):
         try:
-            df = self.df_dict_org[ticker]
-            slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
+            if price > 5000.0:
+                df = self.df_dict_org[ticker]
+                slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
 
-            ticker_name = str(ticker).split("-")[1].strip()
-            real_price = price * (1.0 + self.fee_ratio)
+                ticker_name = str(ticker).split("-")[1].strip()
+                real_price = price * (1.0 + self.fee_ratio)
 
-            is_already_has_ticker = False
-            i = 0
-            for sim_balance in self.sim_balance:
-                if sim_balance['currency'] == ticker_name:
-                    is_already_has_ticker = True
-                    break
+                is_already_has_ticker = False
+                i = 0
+                for sim_balance in self.sim_balance:
+                    if sim_balance['currency'] == ticker_name:
+                        is_already_has_ticker = True
+                        break
+                    else:
+                        i += 1
+                # logger.debug(self.sim_balance)
+                if is_already_has_ticker is True:
+                    # target_price = float(slicing_df['high'])
+                    # target_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+                    target_price = self.calculate_price(slicing_df)
+                    total_price = (float(self.sim_balance[i]['avg_buy_price']) * float(self.sim_balance[i]['balance']))\
+                                     + float(price)
+                    balance = float(price) / target_price + float(self.sim_balance[i]['balance'])
+                    avg_buy_price = float(total_price) / float(balance)
+                    self.sim_balance[i]['balance'] = str(balance)
+                    self.sim_balance[i]['avg_buy_price'] = str(avg_buy_price)
                 else:
-                    i += 1
-            # logger.debug(self.sim_balance)
-            if is_already_has_ticker is True:
-                # target_price = float(slicing_df['high'])
-                target_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
-                total_price = (float(self.sim_balance[i]['avg_buy_price']) * float(self.sim_balance[i]['balance']))\
-                                 + float(price)
-                balance = float(price) / target_price + float(self.sim_balance[i]['balance'])
-                avg_buy_price = float(total_price) / float(balance)
-                self.sim_balance[i]['balance'] = str(balance)
-                self.sim_balance[i]['avg_buy_price'] = str(avg_buy_price)
+                    # avg_buy_price = float(slicing_df['high'])
+                    # avg_buy_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+                    avg_buy_price = self.calculate_price(slicing_df)
+                    balance = float(price) / avg_buy_price
+                    logger.critical(str(avg_buy_price))
+                    logger.critical(str(price))
+                    logger.critical(str(balance))
+
+                    self.sim_balance.append({'currency': ticker_name,
+                                             'balance': str(balance),
+                                             'locked': '0.0',
+                                             'avg_buy_price': str(avg_buy_price),
+                                             'avg_buy_price_modified': True,
+                                             'unit_currency': 'KRW'})
+
+                self.start_money = float(self.start_money) - float(real_price)
+
+                self.sim_balance[0] = {'currency': 'KRW',
+                                       'balance': str(self.start_money),
+                                       'locked': '0.0',
+                                       'avg_buy_price': '0',
+                                       'avg_buy_price_modified': True,
+                                       'unit_currency': 'KRW'}
+                # logger.debug(self.sim_balance)
+                result = {'uuid': 'c20f1a3c-3890-4b9b-b99b-f952bf698f7b',
+                          'side': 'bid',
+                          'ord_type': 'price',
+                          'price': float(price),
+                          'state': 'wait',
+                          'market': ticker,
+                          'created_at': str(datetime.datetime.now()),
+                          'volume': None,
+                          'remaining_volume': None,
+                          'reserved_fee': str((float(price) * self.fee_ratio)),
+                          'remaining_fee': str((float(price) * self.fee_ratio)),
+                          'paid_fee': '0.0',
+                          'locked': str((float(price) * (1.0 + self.fee_ratio))),
+                          'executed_volume': '0.0',
+                          'trades_count': 0}
+                # print(self.sim_balance)
+                # print(result)
+                return result
             else:
-                # avg_buy_price = float(slicing_df['high'])
-                avg_buy_price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
-                balance = float(price) / avg_buy_price
-                self.sim_balance.append({'currency': ticker_name,
-                                         'balance': str(balance),
-                                         'locked': '0.0',
-                                         'avg_buy_price': str(avg_buy_price),
-                                         'avg_buy_price_modified': True,
-                                         'unit_currency': 'KRW'})
-
-            self.start_money = float(self.start_money) - float(real_price)
-
-            self.sim_balance[0] = {'currency': 'KRW',
-                                   'balance': str(self.start_money),
-                                   'locked': '0.0',
-                                   'avg_buy_price': '0',
-                                   'avg_buy_price_modified': True,
-                                   'unit_currency': 'KRW'}
-            # logger.debug(self.sim_balance)
-            result = {'uuid': 'c20f1a3c-3890-4b9b-b99b-f952bf698f7b',
-                      'side': 'bid',
-                      'ord_type': 'price',
-                      'price': float(price),
-                      'state': 'wait',
-                      'market': ticker,
-                      'created_at': str(datetime.datetime.now()),
-                      'volume': None,
-                      'remaining_volume': None,
-                      'reserved_fee': str((float(price) * self.fee_ratio)),
-                      'remaining_fee': str((float(price) * self.fee_ratio)),
-                      'paid_fee': '0.0',
-                      'locked': str((float(price) * (1.0 + self.fee_ratio))),
-                      'executed_volume': '0.0',
-                      'trades_count': 0}
-            # print(self.sim_balance)
-            # print(result)
-            return result
+                result = {'uuid': 'c20f1a3c-3890-4b9b-b99b-f952bf698f7b',
+                          'side': 'bid',
+                          'ord_type': 'price',
+                          'price': 0.0,
+                          'state': 'wait',
+                          'market': ticker,
+                          'created_at': str(datetime.datetime.now()),
+                          'volume': None,
+                          'remaining_volume': None,
+                          'reserved_fee': '0.0',
+                          'remaining_fee': '0.0',
+                          'paid_fee': '0.0',
+                          'locked': '0.0',
+                          'executed_volume': '0.0',
+                          'trades_count': 0}
+                return result
         except Exception as x:
             logger.critical(x.__class__.__name__)
             return None
@@ -175,7 +206,8 @@ class BackExchange:
         try:
             df = self.df_dict_org[order_currency]
             slicing_df = df.iloc[self.sub_index: self.sub_index + 1]
-            price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+            # price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+            price = self.calculate_price(slicing_df)
             # resp = float(slicing_df['close'])
             resp = price
 
@@ -194,7 +226,8 @@ class BackExchange:
             i = 0
             for sim_balance in self.sim_balance:
                 if sim_balance['currency'] == ticker_name:
-                    price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+                    # price = (float(slicing_df['high']) + float(slicing_df['low'])) / 2.0
+                    price = self.calculate_price(slicing_df)
                     # price = float(slicing_df['close'])
                     # logger.debug((price * (1.0 - self.fee_ratio) * float(sim_balance['balance'])))
                     self.start_money += (price * (1.0 - self.fee_ratio) * float(sim_balance['balance']))
