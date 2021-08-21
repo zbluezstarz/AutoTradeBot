@@ -20,7 +20,7 @@ class VolatilityModi1(CryptoStrategy):
         self.reference_time = 0
         self.delta_time = datetime.timedelta(days=1)
         init_now = datetime.datetime.now()
-        self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 0, 0)
+        self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 1, 0)
 
         self.max_ticker_num = 5
         self.noise_ratio_average_day = 20
@@ -52,7 +52,7 @@ class VolatilityModi1(CryptoStrategy):
 
     def get_turn_start_end_time(self):
         start_time = self.get_start_time()
-        end_time = start_time + datetime.timedelta(hours=12)
+        end_time = start_time + datetime.timedelta(hours=12) - datetime.timedelta(minutes=1)
         self.set_start_time(start_time + self.delta_time)
         logger.info("Start " + self.name + " Trading : " + str(start_time) + " ~ " + str(end_time))
         return start_time, end_time
@@ -271,8 +271,10 @@ class VolatilityModi1(CryptoStrategy):
                     coin_filter[ticker] = coin_filter_condition[ticker]
             logger.info("Get Ticker Values End!")
             coin_filter_reverse = sorted(coin_filter.items(), reverse=True, key=lambda item: item[1])
-            trade_value_top = coin_filter_reverse[:max_ticker_num]
-            for i in range(max_ticker_num):
+
+            ticker_num = min(max_ticker_num, len(coin_filter_reverse))
+            trade_value_top = coin_filter_reverse[:ticker_num]
+            for i in range(ticker_num):
                 trade_filter_top_coin_name.append(trade_value_top[i][0])
             self.target_tickers = trade_filter_top_coin_name
 
