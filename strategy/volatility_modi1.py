@@ -77,7 +77,6 @@ class VolatilityModi1(CryptoStrategy):
                      "{0:^9}".format("KRW") + " | "
                      )
 
-
         index = 0
         for target_ticker in target_tickers:
             index += 1
@@ -235,12 +234,30 @@ class VolatilityModi1(CryptoStrategy):
                 trade_filter_top_coin_name.append(trade_value_top[i][0])
             self.target_tickers = trade_filter_top_coin_name
         '''
-
+        coin_filter_condition = dict()
+        market_timing_ratio_dict = dict()
         for ticker in tickers:
             org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 30)
             # org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 1)
             if float(mod_df['pro_half2'][-1]) > 0.0 and float(mod_df['vol_half2'][-1]) > float(mod_df['vol_half1'][-1]):
                 self.target_tickers.append(ticker)
+            coin_filter_condition[ticker] = mod_df['pro_half1'].rolling(30).mean().iloc[-1]  # filter condition
+
+            market_timing_ratio = 0.0
+            MAs = [mod_df['close_half1'].rolling(3).mean().iloc[-1],
+                   mod_df['close_half1'].rolling(5).mean().iloc[-1],
+                   mod_df['close_half1'].rolling(10).mean().iloc[-1],
+                   mod_df['close_half1'].rolling(20).mean().iloc[-1]]
+
+            close_price = mod_df['close_half1'].iloc[-1]
+            for MA in MAs:
+                if MA > close_price:
+                    market_timing_ratio += 1.0
+            market_timing_ratio = market_timing_ratio / float(len(MAs))
+            market_timing_ratio_dict[ticker] = market_timing_ratio
+
+            count += 1
+            logger.debug(ticker + " get_custom_1days_ohlcv " + str(count))
         # logger.debug("=================================== : " + str(len(self.target_tickers)))
         if len(self.target_tickers) > max_ticker_num:
             coin_filter = dict()
@@ -249,7 +266,9 @@ class VolatilityModi1(CryptoStrategy):
             for ticker in self.target_tickers:
                 # coin_filter[ticker] = mod_df.iloc[-1]['value']
                 # coin_filter[ticker] = mod_df.iloc[-1]['val_half1']
-                coin_filter[ticker] = mod_df['pro_half1'].rolling(30).mean().iloc[-1]
+                # coin_filter[ticker] = mod_df['pro_half1'].rolling(30).mean().iloc[-1]
+                if market_timing_ratio_dict[ticker] > 0.0:
+                    coin_filter[ticker] = coin_filter_condition[ticker]
             logger.info("Get Ticker Values End!")
             coin_filter_reverse = sorted(coin_filter.items(), reverse=True, key=lambda item: item[1])
             trade_value_top = coin_filter_reverse[:max_ticker_num]
@@ -257,8 +276,7 @@ class VolatilityModi1(CryptoStrategy):
                 trade_filter_top_coin_name.append(trade_value_top[i][0])
             self.target_tickers = trade_filter_top_coin_name
 
-
-
+        count = 0
         # logger.debug("===================================")
 
         for ticker in self.target_tickers:
@@ -419,13 +437,21 @@ class VolatilityModi1(CryptoStrategy):
                          # {'market': 'KRW-AXS', 'korean_name': '엑시인피니티', 'english_name': 'Axie Infinity'},
                          # {'market': 'KRW-STX', 'korean_name': '스택스', 'english_name': 'Stacks'}
                     ]
+
+        tickers = []
+        for market in market_lists:
+            tickers.append(market['market'])
+        # print(tickers)
         '''
 
         market_lists = pyupbit.fetch_market()
 
         tickers = []
         for market in market_lists:
-            tickers.append(market['market'])
+            # if "KRW-" in market['market'] or "BTC-" in market['market']:
+            if "KRW-" in market['market']:
+                tickers.append(market['market'])
         # print(tickers)
+
         return tickers
 
