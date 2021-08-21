@@ -12,6 +12,7 @@ class VolatilityModi1(CryptoStrategy):
         self.quotation_api = quotation_api
         self.exchange_api = exchange_api
         self.target_tickers = []
+        self.filtered_tickers_info = []
         self.target_tickers_file = "target_tickers.txt"
         self.count = 0
         self.chat_sleep_time = 0.0
@@ -21,12 +22,9 @@ class VolatilityModi1(CryptoStrategy):
         init_now = datetime.datetime.now()
         self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 0, 0)
 
-        self.filtered_tickers_info = []
-
         self.max_ticker_num = 5
         self.noise_ratio_average_day = 20
         self.target_volatility_ratio = 0.1
-
         self.loss_cut = -50.0
         self.profit_cut = 300.0
 
@@ -72,13 +70,13 @@ class VolatilityModi1(CryptoStrategy):
             return False
 
     def execute_buy_strategy(self, target_tickers, remain_buy_list):
-        '''
+
         logger.debug("{0:^9}".format("ticker") + " | " +
                      "{0:^9}".format("target") + " | " +
                      "{0:^9}".format("current") + " | " +
                      "{0:^9}".format("KRW") + " | "
                      )
-        '''
+
 
         index = 0
         for target_ticker in target_tickers:
@@ -93,18 +91,16 @@ class VolatilityModi1(CryptoStrategy):
             current_price = get_current_price(self.quotation_api, target_ticker)
             krw = get_balance(self.exchange_api, "KRW")
 
-            '''
             logger.debug("{0:>9}".format(target_ticker) + " | " +
                          "{0:>9}".format(str(int(target_price))) + " | " +
                          "{0:>9}".format(str(int(current_price))) + " | " +
                          "{0:>9}".format(str(int(krw))) + " | "
                          )
-            '''
 
             if float(balance) > 0.0:
                 ret_msg = target_ticker + ' already has (' + str(balance) + ')'
-                logger.debug(ret_msg)
-                # send_message_to_chat(ret_msg, self.chat_sleep_time)
+                logger.info(ret_msg)
+                send_message_to_chat(ret_msg, self.chat_sleep_time)
 
             else:
                 if target_price < current_price:
@@ -119,8 +115,6 @@ class VolatilityModi1(CryptoStrategy):
                                     self.krw_per_ticker
                     else:
                         buy_price = self.target_volatility_ratio * market_timing_ratio * self.krw_per_ticker
-                        #buy_price = yesterday_volatility_ratio / self.target_volatility_ratio * market_timing_ratio * \
-                        #            self.krw_per_ticker
 
                     # logger.debug(str(self.target_volatility_ratio))
                     # logger.debug(str(yesterday_diff))
@@ -135,7 +129,7 @@ class VolatilityModi1(CryptoStrategy):
                         if 'error' not in result.keys():
                             remain_buy_list.remove(target_ticker)
                         buy_msg = "Buy " + target_ticker + " (" + str(current_price) + "), " + str(result)
-                        logger.debug(buy_msg)
+                        logger.info(buy_msg)
                         send_message_to_chat(buy_msg, self.chat_sleep_time)
             # time.sleep(0.1)
 
@@ -167,7 +161,7 @@ class VolatilityModi1(CryptoStrategy):
                         #    remain_buy_list.append(target_ticker)
                         sell_msg = "Sell " + target_ticker + " (" + str(current_price) + "," + str(profit_rate)\
                                    + "%), " + str(result)
-                        logger.debug(sell_msg)
+                        logger.info(sell_msg)
                         send_message_to_chat(sell_msg, self.chat_sleep_time)
                 else:
                     err_msg = target_ticker + " balance_ticker price under 5000 " + str(balance_ticker_price)
@@ -220,7 +214,7 @@ class VolatilityModi1(CryptoStrategy):
 
         org_df = None
         mod_df = None
-
+        '''
         for ticker in tickers:
             # org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 30)
             org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 1)
@@ -240,6 +234,30 @@ class VolatilityModi1(CryptoStrategy):
             for i in range(max_ticker_num):
                 trade_filter_top_coin_name.append(trade_value_top[i][0])
             self.target_tickers = trade_filter_top_coin_name
+        '''
+
+        for ticker in tickers:
+            org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 30)
+            # org_df, mod_df = get_custom_1days_ohlcv(self.quotation_api, ticker, today_str, 0, 1)
+            if float(mod_df['pro_half2'][-1]) > 0.0 and float(mod_df['vol_half2'][-1]) > float(mod_df['vol_half1'][-1]):
+                self.target_tickers.append(ticker)
+        # logger.debug("=================================== : " + str(len(self.target_tickers)))
+        if len(self.target_tickers) > max_ticker_num:
+            coin_filter = dict()
+            trade_filter_top_coin_name = []
+            logger.info("Get Ticker Values Start!")
+            for ticker in self.target_tickers:
+                # coin_filter[ticker] = mod_df.iloc[-1]['value']
+                # coin_filter[ticker] = mod_df.iloc[-1]['val_half1']
+                coin_filter[ticker] = mod_df['pro_half1'].rolling(30).mean().iloc[-1]
+            logger.info("Get Ticker Values End!")
+            coin_filter_reverse = sorted(coin_filter.items(), reverse=True, key=lambda item: item[1])
+            trade_value_top = coin_filter_reverse[:max_ticker_num]
+            for i in range(max_ticker_num):
+                trade_filter_top_coin_name.append(trade_value_top[i][0])
+            self.target_tickers = trade_filter_top_coin_name
+
+
 
         # logger.debug("===================================")
 
@@ -278,8 +296,6 @@ class VolatilityModi1(CryptoStrategy):
                 mod_df.iloc[-1]['close'] + (mod_df.iloc[-1]['high_half1'] - mod_df.iloc[-1]['low_half1']) * \
                 noise_ratio_average
 
-
-
             ticker_info = {'ticker': ticker,
                            'market_timing_ratio': market_timing_ratio,
                            'target_price': target_price,
@@ -299,7 +315,7 @@ class VolatilityModi1(CryptoStrategy):
         return self.target_tickers
 
     def get_target_ticker(self, quotation_api, max_ticker_num):
-
+        '''
         market_lists = [{'market': 'KRW-BTC', 'korean_name': '비트코인', 'english_name': 'Bitcoin'},
                          {'market': 'KRW-ETH', 'korean_name': '이더리움', 'english_name': 'Ethereum'},
                          {'market': 'KRW-NEO', 'korean_name': '네오', 'english_name': 'NEO'},
@@ -403,6 +419,9 @@ class VolatilityModi1(CryptoStrategy):
                          # {'market': 'KRW-AXS', 'korean_name': '엑시인피니티', 'english_name': 'Axie Infinity'},
                          # {'market': 'KRW-STX', 'korean_name': '스택스', 'english_name': 'Stacks'}
                     ]
+        '''
+
+        market_lists = pyupbit.fetch_market()
 
         tickers = []
         for market in market_lists:
