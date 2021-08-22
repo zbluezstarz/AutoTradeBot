@@ -172,12 +172,12 @@ class VolatilityModi1(CryptoStrategy):
     def execute_turn_end_process(self):
         logger.debug("Sell All Tickers")
         balances = self.exchange_api.get_balances()
-        # logger.debug(balances)
+        logger.debug(balances)
 
         for balance in balances[:]:
             currency = balance['currency']
             # logger.debug(balance)
-            if currency == 'KRW':
+            if currency == 'KRW' or "APENFT" in currency:
                 continue
             else:
                 # logger.debug(balance)
@@ -257,7 +257,7 @@ class VolatilityModi1(CryptoStrategy):
             market_timing_ratio_dict[ticker] = market_timing_ratio
 
             count += 1
-            logger.debug(ticker + " get_custom_1days_ohlcv " + str(count))
+            # logger.debug(ticker + " get_custom_1days_ohlcv " + str(count))
         # logger.debug("=================================== : " + str(len(self.target_tickers)))
         if len(self.target_tickers) > max_ticker_num:
             coin_filter = dict()
