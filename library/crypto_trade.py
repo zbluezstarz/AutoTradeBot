@@ -92,10 +92,13 @@ class CryptoTrade:
                     self.restart_timing = self.current_strategy.isTurnRestartTiming(end_time, running_now)
 
                 if self.running_timing is True:
+
+                    self.is_no_action_time = False
+
                     self.current_strategy.execute_buy_strategy(self.target_tickers, self.remain_buy_list)
 
-                    if not self.is_no_action_time:
-                        self.current_strategy.execute_sell_strategy(self.remain_buy_list)
+                    # if not self.is_no_action_time:
+                    self.current_strategy.execute_sell_strategy(self.remain_buy_list)
 
                     if crypto_param.exchange == "backtest":
                         self.quotation_api.set_sim_sub_index_update()
@@ -151,10 +154,15 @@ class CryptoTrade:
 
                     previous_cash = self.cash
 
-                else:
                     self.is_no_action_time = True
-                    logger.debug("No Action Time~")
-                    time.sleep(3600)
+                else:
+                    sleep_time = 0
+                    if self.is_no_action_time == True:
+                        sleep_time = 3600
+                    else:
+                        sleep_time = 60
+                    logger.debug("No Action Time ~ " + str(sleep_time) + "s")
+                    time.sleep(sleep_time)
 
             except Exception as e:
                 logger.critical(e)
