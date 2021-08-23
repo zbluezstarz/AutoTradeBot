@@ -34,6 +34,7 @@ class CryptoTrade:
             self.running_timing = True
             self.init_back_index = self.quotation_api.get_sim_index_update()
             self.sim_day_num = self.quotation_api.get_sim_day_num()
+            self.current_strategy.set_backtest_flag(True)
             logger.debug("backtest simulation num " + str(self.sim_day_num))
 
         self.cash = crypto_api.get_balance(self.exchange_api, "KRW")

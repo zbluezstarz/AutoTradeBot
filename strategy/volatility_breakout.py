@@ -30,7 +30,12 @@ class VolatilityBreakout(CryptoStrategy):
         now = datetime.datetime.now()
         self.start_time = datetime.datetime(now.year, now.month, now.day, self.reference_time, 0, 0)
 
+        self.is_backtest = False
+
         logger.info("Create VolatilityBreakout Strategy Object")
+
+    def set_backtest_flag(self, is_backtest):
+        self.is_backtest = is_backtest
 
     def set_parameters(self, crypto_param):
         logger.debug("Get " + self.name + " Parameters from file")

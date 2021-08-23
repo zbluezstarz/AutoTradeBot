@@ -70,63 +70,39 @@ def write_target_tickers_in_file(file_name, target_tickers):
     file.close()
 
 
-def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, day_num):
-    '''
-    to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
-    hours_unit = 24
-    remain_day_num = day_num
-    df = quotation_api.get_ohlcv(ticker, interval="minute60", count=day_num * hours_unit, to=to_str)
-    remain_day_num -= 1
-    '''
+def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, day_num, backtest):
 
-    '''
-    to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
-    hours_unit = 24
-    remain_day_num = day_num
-    df = quotation_api.get_ohlcv(ticker, interval="minute60", count=1 * hours_unit, to=to_str)
-    remain_day_num -= 1
-    to_str -= datetime.timedelta(days=1)
-
-    while remain_day_num > 0:
-        print(remain_day_num)
-        new_1day_df = quotation_api.get_ohlcv(ticker, interval="minute60", count=1 * hours_unit, to=to_str)
-
-        if new_1day_df is None:
-            continue
-        if new_1day_df.shape[0] % 24 != 0:
-            print("== sample is shortage")
-            return None, None
-        df = pandas.concat([new_1day_df, df])
-        remain_day_num -= 1
-        to_str -= datetime.timedelta(days=1)
-        time.sleep(0.1)
-    '''
-
-    get_custom_day_unit = 15
-    get_day_num = day_num % get_custom_day_unit
-    if get_day_num == 0:
-        get_day_num = get_custom_day_unit
-    to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
-    hours_unit = 24
-    remain_day_num = day_num
-    df = quotation_api.get_ohlcv(ticker, interval="minute60", count=get_day_num * hours_unit, to=to_str)
-    remain_day_num -= get_day_num
-    to_str -= datetime.timedelta(days=get_day_num)
-
-    get_day_num = get_custom_day_unit
-    while remain_day_num > 0:
-        # print(remain_day_num)
-        new_1day_df = quotation_api.get_ohlcv(ticker, interval="minute60", count=get_day_num * hours_unit, to=to_str)
-
-        if new_1day_df is None:
-            continue
-        if new_1day_df.shape[0] % 24 != 0:
-            print("== sample is shortage")
-            return None, None
-        df = pandas.concat([new_1day_df, df])
+    if backtest:
+        to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
+        hours_unit = 24
+        remain_day_num = day_num
+        df = quotation_api.get_ohlcv(ticker, interval="minute60", count=day_num * hours_unit, to=to_str)
+    else:
+        get_custom_day_unit = 15
+        get_day_num = day_num % get_custom_day_unit
+        if get_day_num == 0:
+            get_day_num = get_custom_day_unit
+        to_str = datetime.datetime.strptime(end_day_str, '%Y%m%d') + datetime.timedelta(hours=end_hours_int + 1)
+        hours_unit = 24
+        remain_day_num = day_num
+        df = quotation_api.get_ohlcv(ticker, interval="minute60", count=get_day_num * hours_unit, to=to_str)
         remain_day_num -= get_day_num
         to_str -= datetime.timedelta(days=get_day_num)
-        time.sleep(0.1)
+
+        get_day_num = get_custom_day_unit
+        while remain_day_num > 0:
+            # print(remain_day_num)
+            new_1day_df = quotation_api.get_ohlcv(ticker, interval="minute60", count=get_day_num * hours_unit, to=to_str)
+
+            if new_1day_df is None:
+                continue
+            if new_1day_df.shape[0] % 24 != 0:
+                print("== sample is shortage")
+                return None, None
+            df = pandas.concat([new_1day_df, df])
+            remain_day_num -= get_day_num
+            to_str -= datetime.timedelta(days=get_day_num)
+            time.sleep(0.1)
 
     index = []
     data = []
