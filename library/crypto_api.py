@@ -78,7 +78,7 @@ def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, da
         remain_day_num = day_num
         df = quotation_api.get_ohlcv(ticker, interval="minute60", count=day_num * hours_unit, to=to_str)
     else:
-        get_custom_day_unit = 15
+        get_custom_day_unit = 10
         get_day_num = day_num % get_custom_day_unit
         if get_day_num == 0:
             get_day_num = get_custom_day_unit
@@ -88,6 +88,8 @@ def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, da
         df = quotation_api.get_ohlcv(ticker, interval="minute60", count=get_day_num * hours_unit, to=to_str)
         remain_day_num -= get_day_num
         to_str -= datetime.timedelta(days=get_day_num)
+
+        time.sleep(0.5)
 
         get_day_num = get_custom_day_unit
         while remain_day_num > 0:
@@ -102,7 +104,7 @@ def get_custom_1days_ohlcv(quotation_api, ticker, end_day_str, end_hours_int, da
             df = pandas.concat([new_1day_df, df])
             remain_day_num -= get_day_num
             to_str -= datetime.timedelta(days=get_day_num)
-            time.sleep(0.1)
+            time.sleep(0.5)
 
     index = []
     data = []
