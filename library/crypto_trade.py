@@ -37,6 +37,8 @@ class CryptoTrade:
             self.current_strategy.set_backtest_flag(True)
             logger.debug("backtest simulation num " + str(self.sim_day_num))
 
+        self.current_strategy.execute_turn_end_process()
+
         self.cash = crypto_api.get_balance(self.exchange_api, "KRW")
         self.start_cash = self.cash
         self.highest_cash = self.cash
@@ -69,11 +71,11 @@ class CryptoTrade:
         return start_time, end_time
 
     def start_trade(self):
-        start_time, end_time = self.init_trade()
+        start_time, end_time = self.current_strategy.get_turn_start_end_time()
         logger.info("Start Trading")
         self.is_running = True
 
-        self.is_no_action_time = False
+        self.is_no_action_time = True
         previous_cash = self.cash
 
         index = 0
@@ -113,7 +115,9 @@ class CryptoTrade:
                 elif self.restart_timing is True:
                     self.current_strategy.execute_turn_end_process()
 
+                    # Update Next Turn Start/End Time
                     # start_time, end_time = self.init_trade()
+                    start_time, end_time = self.current_strategy.get_turn_start_end_time()
                     self.is_no_action_time = False
 
                     if crypto_param.exchange == "backtest":
@@ -159,11 +163,7 @@ class CryptoTrade:
 
                     self.is_no_action_time = True
                 else:
-                    sleep_time = 0
-                    if self.is_no_action_time == True:
-                        sleep_time = 3600
-                    else:
-                        sleep_time = 60
+                    sleep_time = 300
                     logger.debug("No Action Time ~ " + str(sleep_time) + "s")
                     time.sleep(sleep_time)
 

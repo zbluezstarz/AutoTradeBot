@@ -20,7 +20,7 @@ class VolatilityModi1(CryptoStrategy):
         self.reference_time = 0
         self.delta_time = datetime.timedelta(days=1)
         init_now = datetime.datetime.now()
-        self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 1, 0)
+        self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 3, 0)
 
         self.max_ticker_num = 5
         self.noise_ratio_average_day = 20
@@ -39,12 +39,13 @@ class VolatilityModi1(CryptoStrategy):
         self.is_backtest = is_backtest
 
     def set_parameters(self, crypto_param):
-        logger.debug("Get " + self.name + " Parameters from file")
+        logger.info("Get " + self.name + " Parameters from file")
 
-        logger.debug(str(self.max_ticker_num) + "," + str(self.noise_ratio_average_day) + "," +
-                     str(self.target_volatility_ratio))
-
-        logger.debug(str(self.loss_cut) + "," + str(self.profit_cut))
+        logger.info("max_ticker_num          : " + str(self.max_ticker_num))
+        logger.info("noise_ratio_average_day : " + str(self.noise_ratio_average_day))
+        logger.info("target_volatility_ratio : " + str(self.target_volatility_ratio))
+        logger.info("loss_cut                : " + str(self.loss_cut))
+        logger.info("profit_cut              : " + str(self.profit_cut))
 
         self.chat_sleep_time = float(crypto_param.chat_sleep_time)
         logger.info("Set " + self.name + " Parameters")
@@ -57,8 +58,12 @@ class VolatilityModi1(CryptoStrategy):
 
     def get_turn_start_end_time(self):
         start_time = self.get_start_time()
-        end_time = start_time + datetime.timedelta(hours=12) - datetime.timedelta(minutes=1)
-        self.set_start_time(start_time + self.delta_time)
+        end_time = start_time + datetime.timedelta(hours=12) - datetime.timedelta(minutes=3)
+        running_now = datetime.datetime.now()
+        if self.isRunningTiming(start_time, end_time, running_now) is False:
+            self.set_start_time(self.get_start_time() + self.delta_time)
+            start_time = self.get_start_time()
+            end_time = start_time + datetime.timedelta(hours=12) - datetime.timedelta(minutes=3)
         logger.info("Start " + self.name + " Trading : " + str(start_time) + " ~ " + str(end_time))
         return start_time, end_time
 
@@ -281,7 +286,7 @@ class VolatilityModi1(CryptoStrategy):
 
             coin_filter_condition[ticker] = mod_df['pro_half1'].rolling(self.noise_ratio_average_day).mean().iloc[-1]  # filter condition
             count += 1
-            # logger.debug(ticker + " get_custom_1days_ohlcv " + str(count))
+            logger.debug(ticker + " get_custom_1days_ohlcv " + str(count))
         if len(self.target_tickers) > max_ticker_num:
             coin_filter = dict()
             trade_filter_top_coin_name = []
