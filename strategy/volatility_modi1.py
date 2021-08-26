@@ -23,7 +23,7 @@ class VolatilityModi1(CryptoStrategy):
         self.start_time = datetime.datetime(init_now.year, init_now.month, init_now.day, self.reference_time, 1, 0)
 
         self.max_ticker_num = 5
-        self.noise_ratio_average_day = 30
+        self.noise_ratio_average_day = 20
         self.target_volatility_ratio = 0.1
         self.loss_cut = -50.0
         self.profit_cut = 300.0

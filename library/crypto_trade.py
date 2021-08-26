@@ -94,7 +94,9 @@ class CryptoTrade:
 
                 if self.running_timing is True:
 
-                    self.is_no_action_time = False
+                    if self.is_no_action_time:
+                        self.is_no_action_time = False
+                        start_time, end_time = self.init_trade()
 
                     self.current_strategy.execute_buy_strategy(self.target_tickers, self.remain_buy_list)
 
@@ -111,7 +113,7 @@ class CryptoTrade:
                 elif self.restart_timing is True:
                     self.current_strategy.execute_turn_end_process()
 
-                    start_time, end_time = self.init_trade()
+                    # start_time, end_time = self.init_trade()
                     self.is_no_action_time = False
 
                     if crypto_param.exchange == "backtest":
