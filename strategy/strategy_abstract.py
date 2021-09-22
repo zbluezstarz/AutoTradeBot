@@ -1,5 +1,5 @@
 import sys
-from log.logging_api import *
+from library.logging_api import *
 from abc import *
 
 class CryptoStrategy(metaclass=ABCMeta):

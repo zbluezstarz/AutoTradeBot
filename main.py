@@ -1,5 +1,5 @@
 from library.crypto_trade import *
-from log.logging_api import *
+from library.logging_api import *
 
 
 logger.info("Auto Trade Bot Start!")

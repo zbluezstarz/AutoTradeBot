@@ -35,7 +35,7 @@ def create_logger(logger_name=None, stream_level=logging.DEBUG, file_level=loggi
 
 
 now = datetime.datetime.today()
-log_file_name = str(now.year) + (str(now.month)).zfill(2) + (str(now.day)).zfill(2) + ".txt"
+log_file_name = "log/" + str(now.year) + (str(now.month)).zfill(2) + (str(now.day)).zfill(2) + ".txt"
 logger = create_logger(
     logger_name="auto_bot_logger",
     file_name=log_file_name
@@ -45,6 +45,8 @@ with open("../chat_bot.txt") as f:
     lines = f.readlines()
     token = lines[0].split("=")[1].strip()
     chat_id = int(lines[1].split("=")[1].strip())
+    # logger.info(str(token) + " " + str(chat_id))
+
 
 chat_bot = telegram.Bot(token=token)
 

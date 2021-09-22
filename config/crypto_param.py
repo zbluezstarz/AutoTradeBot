@@ -1,4 +1,4 @@
-from log.logging_api import *
+from library.logging_api import *
 
 class CryptoParameter:
     def __init__(self):
